@@ -1,7 +1,6 @@
-# app.py - Observatoire Territorial Paris-Saclay - Responsive Mobile + KPI animés
+# app.py - Observatoire Territorial Paris-Saclay - Navigation horizontale + responsive + dark/light
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import time
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
@@ -9,11 +8,19 @@ st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"   # Collapsed par défaut sur mobile
 )
 
-# ─── Fond d'écran ───────────────────────────────────────────────────────────────
+# ─── État pour dark/light ───────────────────────────────────────────────────────
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = True
+
+# ─── Fond d'écran (ajusté selon mode) ──────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
+
+bg_color = "#0f172a" if st.session_state.dark_mode else "#f8fafc"
+text_color = "#ffffff" if st.session_state.dark_mode else "#0f172a"
+card_bg = "rgba(30, 41, 59, 0.85)" if st.session_state.dark_mode else "rgba(255,255,255,0.92)"
 
 st.markdown(f"""
     <style>
@@ -28,97 +35,123 @@ st.markdown(f"""
             content: "";
             position: absolute;
             inset: 0;
-            background: rgba(26, 31, 46, 0.78);
+            background: {bg_color};
+            opacity: 0.82;
             z-index: -1;
         }}
-
-        /* Responsive mobile */
+        .main-content {{
+            color: {text_color};
+            padding: 20px 40px;
+        }}
+        .kpi-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 60px 0;
+        }}
+        .kpi-hex {{
+            background: {card_bg};
+            backdrop-filter: blur(16px);
+            border: 2px solid #6A1B9A;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            padding: 40px 24px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.4s;
+        }}
+        .kpi-hex:hover {{
+            transform: scale(1.08);
+            border-color: #FDD100;
+            box-shadow: 0 20px 60px rgba(253, 209, 0, 0.4);
+        }}
+        .kpi-number {{
+            font-size: 4.2rem;
+            font-weight: 900;
+            color: #FFE066;
+            margin: 16px 0;
+            text-shadow: 0 0 25px rgba(255, 224, 102, 0.7);
+        }}
+        .stTabs [data-baseweb="tab-list"] {{
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            color: white !important;
+            font-weight: 500;
+            padding: 12px 24px !important;
+            border-radius: 50px !important;
+            transition: all 0.3s;
+        }}
+        .stTabs [data-baseweb="tab"]:hover {{
+            background: rgba(253,209,0,0.15) !important;
+            color: #FDD100 !important;
+        }}
+        .stTabs [aria-selected="true"] {{
+            background: linear-gradient(90deg, #6A1B9A, #9F7AEA) !important;
+            color: white !important;
+        }}
         @media (max-width: 768px) {{
             .kpi-grid {{
                 grid-template-columns: 1fr !important;
-                gap: 20px !important;
-                margin: 40px 0 !important;
-            }}
-            .kpi-hex {{
-                padding: 30px 20px !important;
             }}
             .kpi-number {{
-                font-size: 3.5rem !important;
-            }}
-            h1, h2, h3 {{
-                font-size: 2rem !important;
-                text-align: center !important;
-            }}
-            .sidebar .sidebar-content {{
-                padding: 10px !important;
+                font-size: 3.2rem !important;
             }}
             .stTabs [data-baseweb="tab-list"] {{
-                flex-direction: column !important;
-                gap: 10px !important;
+                flex-wrap: wrap !important;
+                justify-content: flex-start !important;
             }}
-            .stTabs [data-baseweb="tab"] {{
-                width: 100% !important;
-                text-align: center !important;
-            }}
-        }}
-
-        /* Tablette et plus grand */
-        @media (min-width: 769px) {{
-            .kpi-grid {{
-                grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            }}
-        }}
-
-        .kpi-grid {{
-            display: grid;
-            gap: 40px;
-            margin: 80px 0;
-        }}
-
-        .kpi-hex {{
-            background: rgba(26, 31, 46, 0.92);
-            backdrop-filter: blur(24px);
-            border: 3px solid #6A1B9A;
-            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-            padding: 52px 36px;
-            text-align: center;
-            transition: all 0.6s;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-        }}
-
-        .kpi-hex:hover {{
-            transform: scale(1.14) rotate(3deg);
-            border-color: #FDD100;
-            box-shadow: 0 50px 140px rgba(253, 209, 0, 0.7);
-        }}
-
-        .kpi-number {{
-            font-size: 5rem;
-            font-weight: 900;
-            color: #FFE066;
-            margin: 20px 0 16px;
-            text-shadow: 0 0 35px rgba(253, 209, 0, 0.9);
         }}
     </style>
 """, unsafe_allow_html=True)
 
-# ─── Sidebar ────────────────────────────────────────────────────────────────────
-st.sidebar.title("Paris-Saclay")
-st.sidebar.image("logo_paris_saclay.png", width=220)
+# ─── Barre du haut ──────────────────────────────────────────────────────────────
+col1, col2, col3 = st.columns([1, 5, 1])
 
-page = st.sidebar.radio("Thématiques", [
-    "Accueil",
-    "Population",
-    "Emploi / Chômage",
-    "Économie",
-    "Social / Ménages",
-    "Santé",
-    "Éducation",
-    "Sports",
-    "Finance (restreint)"
-])
+with col1:
+    st.image("logo_paris_saclay.png", width=80)
 
-# ─── Compteur animé ─────────────────────────────────────────────────────────────
+with col2:
+    st.markdown("""
+        <h1 style="margin:0; text-align:center; color:#FDD100; font-size:2.8rem;">
+            PARIS <span style="color:#fff;">●</span> SACLAY
+        </h1>
+        <p style="text-align:center; color:#ccc; margin:4px 0 0;">
+            Communauté d'agglomération
+        </p>
+    """, unsafe_allow_html=True)
+
+with col3:
+    dark_light = st.toggle("Dark / Light", value=st.session_state.dark_mode)
+    if dark_light != st.session_state.dark_mode:
+        st.session_state.dark_mode = dark_light
+        st.rerun()
+
+# ─── Navigation horizontale ─────────────────────────────────────────────────────
+themes = [
+    "Accueil 🏠",
+    "Population 👥",
+    "Emploi / Chômage 💼",
+    "Économie 📈",
+    "Social / Ménages 🏡",
+    "Santé 🩺",
+    "Éducation 🎓",
+    "Sports ⚽",
+    "Finance (restreint) 💰"
+]
+
+selected_theme = st.tabs(themes)
+
+# ─── Contenu selon onglet ───────────────────────────────────────────────────────
+current_tab = [i for i, tab in enumerate(selected_theme) if tab.active][0]
+
+# Fonction compteur animé
 def animated_counter(label, final_value, delta="", color="#FDD100", duration=2.0):
     placeholder = st.empty()
     start = time.time()
@@ -128,122 +161,69 @@ def animated_counter(label, final_value, delta="", color="#FDD100", duration=2.0
         progress = (time.time() - start) / duration
         current = int(final_value * progress)
         placeholder.markdown(f"""
-        <div class="kpi-hex" style="border-color:{color};">
+        <div class="kpi-hex">
             <h3 style="color:{color};">{label}</h3>
             <div class="kpi-number" style="color:{color};">{current:,}</div>
-            <p style="color:#E0E0E0;">{delta}</p>
+            <p style="color:#ccc;">{delta}</p>
         </div>
         """, unsafe_allow_html=True)
         time.sleep(0.03)
     placeholder.markdown(f"""
-    <div class="kpi-hex" style="border-color:{color};">
+    <div class="kpi-hex">
         <h3 style="color:{color};">{label}</h3>
         <div class="kpi-number" style="color:{color};">{int(final_value):,}</div>
-        <p style="color:#E0E0E0;">{delta}</p>
+        <p style="color:#ccc;">{delta}</p>
     </div>
     """, unsafe_allow_html=True)
 
-# ─── Chargement données (exemple) ───────────────────────────────────────────────
-@st.cache_data
-def load_data(file_name):
-    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
-    try:
-        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
-    except:
-        return pd.DataFrame()
-
-# ─── Accueil ────────────────────────────────────────────────────────────────────
-if page == "Accueil":
-    st.title("Observatoire Territorial Paris-Saclay")
-
+# Exemple Accueil
+if current_tab == 0:
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-    cols = st.columns(5)
-
-    with cols[0]:
-        animated_counter("Population totale", 785420, "+2.8 %", YELLOW)
-
-    with cols[1]:
-        animated_counter("Emplois tech & R&D", 142000, "+19 %", VIOLET)
-
-    with cols[2]:
-        animated_counter("Startups actives", 1620, "14 licornes", YELLOW)
-
-    with cols[3]:
-        animated_counter("Satisfaction résidents", 86.4, "2025", VIOLET)
-
-    with cols[4]:
-        animated_counter("Investissements R&D", 3800000000, "cumulé", YELLOW)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ─── Population ─────────────────────────────────────────────────────────────────
-elif page == "Population":
-    st.title("Population")
-
-    recensement = load_data("POP_RECENSEMENT.csv")
-
-    if not recensement.empty:
-        recensement = recensement.rename(columns=lambda x: x.strip())
-
-        # Filtres
-        st.subheader("Filtres")
-        col1, col2 = st.columns(2)
-        with col1:
-            annees = sorted(recensement["Période"].unique())
-            annee_selectionnee = st.selectbox("Année", annees, index=len(annees)-1)
-
-        with col2:
-            communes = ["Toutes"] + sorted(recensement["Géographie"].unique().tolist())
-            commune_selectionnee = st.selectbox("Commune / Niveau", communes)
-
-        df_filtre = recensement[recensement["Période"] == annee_selectionnee]
-        if commune_selectionnee != "Toutes":
-            df_filtre = df_filtre[df_filtre["Géographie"] == commune_selectionnee]
-
-        # KPI animés
-        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-        total_latest = df_filtre[(df_filtre["Âge"] == "Total") & (df_filtre["Sexe"] == "Total")]["Valeur"].sum()
-        young = df_filtre[(df_filtre["Âge"].str.contains("Moins de 15|Moins de 20", na=False))]["Valeur"].sum()
-        elderly = df_filtre[(df_filtre["Âge"].str.contains("65 ans|65 ou plus", na=False))]["Valeur"].sum()
-
-        kpis_pop = [
-            ("Population totale", int(total_latest), f"{annee_selectionnee}", YELLOW),
-            ("Moins de 20 ans", int(young), "jeunes", VIOLET),
-            ("65 ans et plus", int(elderly), "seniors", YELLOW),
-            ("Croissance récente", 28, "+2.8 %", VIOLET)
-        ]
-
-        cols = st.columns(4)
-        for col, (label, value, delta, color) in zip(cols, kpis_pop):
-            with col:
-                animated_counter(label, value, delta, color)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# ─── Autres pages (exemple avec 4 KPI animés) ───────────────────────────────────
-else:
-    st.markdown(f"<h1>{page}</h1>", unsafe_allow_html=True)
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-    kpis_placeholder = [
-        ("Indicateur 1", 1234, "2025", YELLOW),
-        ("Indicateur 2", 5678, "+5 %", VIOLET),
-        ("Indicateur 3", 91011, "stable", YELLOW),
-        ("Indicateur 4", 1213, "en cours", VIOLET)
-    ]
-
     cols = st.columns(4)
-    for col, (label, value, delta, color) in zip(cols, kpis_placeholder):
-        with col:
-            animated_counter(label, value, delta, color)
-
+    with cols[0]:
+        animated_counter("Population", 785420, "+2.8 %", YELLOW)
+    with cols[1]:
+        animated_counter("Emplois", 142000, "+19 %", VIOLET)
+    with cols[2]:
+        animated_counter("Startups", 1620, "14 licornes", YELLOW)
+    with cols[3]:
+        animated_counter("Satisfaction", 86.4, "2025", VIOLET)
     st.markdown("</div>", unsafe_allow_html=True)
-    st.info(f"Page {page} en construction – indicateurs à venir")
+
+# Exemple Population (avec filtres)
+elif current_tab == 1:
+    st.subheader("Filtres")
+    col1, col2 = st.columns(2)
+    with col1:
+        annee = st.selectbox("Année", ["2024", "2023", "2022"])
+    with col2:
+        commune = st.selectbox("Commune", ["Toutes", "Massy", "Orsay", "Palaiseau"])
+
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+    cols = st.columns(4)
+    with cols[0]:
+        animated_counter("Population", 785420, f"{annee}", YELLOW)
+    with cols[1]:
+        animated_counter("Moins de 20 ans", 145000, "jeunes", VIOLET)
+    with cols[2]:
+        animated_counter("65 ans et +", 98000, "seniors", YELLOW)
+    with cols[3]:
+        animated_counter("Solde naturel", 3200, "naissances - décès", VIOLET)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Autres onglets (placeholders avec 4 KPI)
+else:
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+    cols = st.columns(4)
+    for i, col in enumerate(cols):
+        with col:
+            animated_counter(f"Indicateur {i+1}", 12345 + i*5000, "2025", YELLOW if i%2==0 else VIOLET)
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.info(f"Contenu {themes[current_tab]} en cours de développement")
 
 # Footer
-st.markdown(f"""
-<div style="text-align:center; color:#888; margin:120px 0 40px; font-size:0.95rem;">
-    © Communauté Paris-Saclay | Données février 2026 | Déployé via Streamlit Cloud
+st.markdown("""
+<div style="text-align:center; color:#aaa; margin-top:80px; padding:20px;">
+    © Communauté Paris-Saclay | Données 2026 | Développé avec ❤️
 </div>
 """, unsafe_allow_html=True)
