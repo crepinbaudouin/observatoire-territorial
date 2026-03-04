@@ -1,8 +1,7 @@
-# app.py - Observatoire Territorial Paris-Saclay - Fond d'écran sur toutes les pages
+# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh complet
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import time
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
@@ -25,12 +24,11 @@ st.markdown(f"""
             background-repeat: no-repeat;
             background-attachment: fixed;
         }}
-        /* Légère superposition sombre pour améliorer la lisibilité */
         .stApp::before {{
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(26, 31, 46, 0.75);  /* Gris foncé semi-transparent */
+            background: rgba(26, 31, 46, 0.78);  /* Gris foncé semi-transparent */
             z-index: -1;
         }}
     </style>
@@ -39,22 +37,22 @@ st.markdown(f"""
 # ─── Couleurs charte Paris-Saclay ──────────────────────────────────────────────
 YELLOW = "#FDD100"
 VIOLET = "#6A1B9A"
-BLACK = "#000000"
-DARK_GRAY = "#1A1F2E"
-LIGHT_GRAY = "#E0E0E0"
-WHITE = "#FFFFFF"
 ACCENT_YELLOW = "#FFE066"
 ACCENT_VIOLET = "#9F7AEA"
 
-# ─── CSS waouh (adapté au fond) ─────────────────────────────────────────────────
+# ─── CSS waouh ──────────────────────────────────────────────────────────────────
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
+    body, .stApp {{
+        color: #FFFFFF;
+        font-family: 'Inter', sans-serif;
+    }}
+
     .hero {{
-        height: 80vh;
-        background: linear-gradient(135deg, rgba(106,27,154,0.65), rgba(0,0,0,0.8)),
-                    url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600');
+        height: 70vh;
+        background: linear-gradient(135deg, rgba(106,27,154,0.65), rgba(0,0,0,0.8));
         background-size: cover;
         background-position: center;
         display: flex;
@@ -66,9 +64,9 @@ st.markdown(f"""
     }}
 
     .hero h1 {{
-        font-size: 6rem;
+        font-size: 5.5rem;
         font-weight: 900;
-        background: linear-gradient(90deg, var(--yellow), var(--accent-violet), var(--yellow));
+        background: linear-gradient(90deg, {YELLOW}, {ACCENT_VIOLET}, {YELLOW});
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         animation: gradientFlow 10s ease infinite;
@@ -77,8 +75,7 @@ st.markdown(f"""
 
     @keyframes gradientFlow {{
         0% {{ background-position: 0% 50%; }}
-        50% {{ background-position: 100% 50%; }}
-        100% {{ background-position: 0% 50%; }}
+        100% {{ background-position: 200% 50%; }}
     }}
 
     .kpi-grid {{
@@ -91,7 +88,7 @@ st.markdown(f"""
     .kpi-hex {{
         background: rgba(26, 31, 46, 0.92);
         backdrop-filter: blur(24px);
-        border: 3px solid var(--violet);
+        border: 3px solid {VIOLET};
         border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
         padding: 52px 36px;
         text-align: center;
@@ -101,14 +98,14 @@ st.markdown(f"""
 
     .kpi-hex:hover {{
         transform: scale(1.14) rotate(3deg);
-        border-color: var(--yellow);
+        border-color: {YELLOW};
         box-shadow: 0 50px 140px rgba(253, 209, 0, 0.7);
     }}
 
     .kpi-number {{
         font-size: 5rem;
         font-weight: 900;
-        color: var(--accent-yellow);
+        color: {ACCENT_YELLOW};
         margin: 20px 0 16px;
         text-shadow: 0 0 35px rgba(253, 209, 0, 0.9);
     }}
@@ -116,7 +113,7 @@ st.markdown(f"""
     .sidebar .sidebar-content {{
         background: rgba(10, 14, 23, 0.98) !important;
         backdrop-filter: blur(20px) !important;
-        border-right: 2px solid var(--violet);
+        border-right: 2px solid {VIOLET};
     }}
 
     footer {{visibility: hidden;}}
@@ -148,31 +145,52 @@ def load_data(file_name):
     except:
         return pd.DataFrame()
 
+# ─── Compteur animé ─────────────────────────────────────────────────────────────
+def animated_counter(label, final_value, delta="", color=YELLOW, duration=2.0):
+    placeholder = st.empty()
+    start = time.time()
+    value = 0
+    final_value = float(final_value)  # Sécurité
+    while time.time() - start < duration:
+        progress = (time.time() - start) / duration
+        current = int(final_value * progress)
+        placeholder.markdown(f"""
+        <div class="kpi-hex" style="border-color:{color};">
+            <h3 style="color:{color};">{label}</h3>
+            <div class="kpi-number" style="color:{color};">{current:,}</div>
+            <p style="color:#E0E0E0;">{delta}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        time.sleep(0.03)
+    placeholder.markdown(f"""
+    <div class="kpi-hex" style="border-color:{color};">
+        <h3 style="color:{color};">{label}</h3>
+        <div class="kpi-number" style="color:{color};">{int(final_value):,}</div>
+        <p style="color:#E0E0E0;">{delta}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
 # ─── Accueil ────────────────────────────────────────────────────────────────────
 if page == "Accueil":
     st.title("Observatoire Territorial Paris-Saclay")
 
-    # 5 KPI hexagonales waouh
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-    kpis = [
-        ("Population totale", "785 420", "+2.8 %", YELLOW),
-        ("Emplois tech & R&D", "142 000", "+19 %", VIOLET),
-        ("Startups actives", "1 620", "14 licornes", YELLOW),
-        ("Satisfaction résidents", "86.4 %", "2025", VIOLET),
-        ("Investissements R&D", "3.8 Md€", "cumulé", YELLOW)
-    ]
-
     cols = st.columns(5)
-    for col, (label, value, delta, color) in zip(cols, kpis):
-        with col:
-            st.markdown(f"""
-            <div class="kpi-hex" style="border-color:{color};">
-                <h3 style="color:{color};">{label}</h3>
-                <div class="kpi-number" style="color:{color};">{value}</div>
-                <p style="color:#E0E0E0;">{delta}</p>
-            </div>
-            """, unsafe_allow_html=True)
+
+    with cols[0]:
+        animated_counter("Population totale", 785420, "+2.8 %", YELLOW)
+
+    with cols[1]:
+        animated_counter("Emplois tech & R&D", 142000, "+19 %", VIOLET)
+
+    with cols[2]:
+        animated_counter("Startups actives", 1620, "14 licornes", YELLOW)
+
+    with cols[3]:
+        animated_counter("Satisfaction résidents", 86.4, "2025", VIOLET)
+
+    with cols[4]:
+        animated_counter("Investissements R&D", 3800000000, "cumulé", YELLOW)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -245,33 +263,30 @@ elif page == "Population":
     else:
         st.warning("Données Population non disponibles")
 
-# ─── Fonction compteur animé ────────────────────────────────────────────────────
-def animated_counter(label, final_value, delta="", color=YELLOW, duration=2.0):
-    placeholder = st.empty()
-    start = time.time()
-    value = 0
-    while time.time() - start < duration:
-        progress = (time.time() - start) / duration
-        current = int(final_value * progress)
-        placeholder.markdown(f"""
-        <div class="kpi-hex" style="border-color:{color};">
-            <h3 style="color:{color};">{label}</h3>
-            <div class="kpi-number" style="color:{color};">{current:,}</div>
-            <p style="color:#E0E0E0;">{delta}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        time.sleep(0.03)
-    placeholder.markdown(f"""
-    <div class="kpi-hex" style="border-color:{color};">
-        <h3 style="color:{color};">{label}</h3>
-        <div class="kpi-number" style="color:{color};">{int(final_value):,}</div>
-        <p style="color:#E0E0E0;">{delta}</p>
-    </div>
-    """, unsafe_allow_html=True)
+# ─── Emploi / Chômage ──────────────────────────────────────────────────────────
+elif page == "Emploi / Chômage":
+    st.title("Emploi / Chômage")
 
-# ─── Autres pages (exemples avec 4 KPI) ─────────────────────────────────────────
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+
+    kpis_emp = [
+        ("Taux chômage estimé", 8.2, "% 2025", YELLOW),
+        ("Demandeurs d'emploi", 28500, "-4.1 %", VIOLET),
+        ("Actifs occupés", 412000, "stable", YELLOW),
+        ("Professions intermédiaires", 37776, "2011", VIOLET)
+    ]
+
+    cols = st.columns(4)
+    for col, (label, value, delta, color) in zip(cols, kpis_emp):
+        with col:
+            animated_counter(label, value, delta, color)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ─── Économie ───────────────────────────────────────────────────────────────────
 elif page == "Économie":
     st.title("Économie")
+
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
     kpis_eco = [
@@ -288,8 +303,10 @@ elif page == "Économie":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+# ─── Social / Ménages ───────────────────────────────────────────────────────────
 elif page == "Social / Ménages":
     st.title("Social / Ménages")
+
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
     kpis_soc = [
@@ -306,6 +323,7 @@ elif page == "Social / Ménages":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+# ─── Santé, Éducation, Sports ───────────────────────────────────────────────────
 elif page in ["Santé", "Éducation", "Sports"]:
     st.title(page)
     st.markdown(f"""
@@ -338,7 +356,7 @@ elif page in ["Santé", "Éducation", "Sports"]:
 elif page == "Finance (restreint)":
     st.title("Finance – Accès sécurisé")
     pwd = st.text_input("Mot de passe", type="password")
-    if pwd == "saclay2026":  # À CHANGER !!!
+    if pwd == "saclay2026":
         st.success("Accès autorisé")
         st.markdown(f"""
         <div class='kpi-grid'>
