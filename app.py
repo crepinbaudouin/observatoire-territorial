@@ -1,12 +1,10 @@
-# app.py - Observatoire Territorial Paris-Saclay
-# Version avec chargement direct depuis GitHub + indicateurs Population
-
+# app.py - Observatoire Territorial Paris-Saclay - Toutes les pages
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# ─── Config page ────────────────────────────────────────────────────────────────
+# ─── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
@@ -14,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─── CSS waouh (glassmorphism + glow + dark mode) ───────────────────────────────
+# ─── CSS waouh ──────────────────────────────────────────────────────────────────
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -34,7 +32,7 @@ st.markdown("""
     }
 
     .hero {
-        height: 80vh;
+        height: 70vh;
         background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.9)),
                     url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600');
         background-size: cover;
@@ -101,90 +99,135 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ─── Hero section ───────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="hero">
-    <div>
-        <h1>Observatoire Territorial</h1>
-        <p style="font-size:1.8rem; margin:2rem 0; max-width:900px;">
-            Indicateurs clés en temps réel – Agglomération Paris-Saclay
-        </p>
-        <div>
-            <a href="#population" class="btn-glow" style="text-decoration:none;">Découvrir les données</a>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ─── Sidebar ────────────────────────────────────────────────────────────────────
-st.sidebar.title("Observatoire Paris-Saclay")
-st.sidebar.image("logo_paris_saclay.png", width=180)  # fichier à la racine
-
 # ─── Chargement données depuis GitHub raw ───────────────────────────────────────
 @st.cache_data
 def load_data(file_name):
     url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
     try:
-        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
+        df = pd.read_csv(url, sep=";", decimal=",", low_memory=False)
+        return df
     except Exception as e:
         st.error(f"Erreur chargement {file_name} : {e}")
         return pd.DataFrame()
 
-# ─── Page Accueil ───────────────────────────────────────────────────────────────
-st.title("Accueil – Observatoire Territorial Paris-Saclay")
+# ─── Sidebar ────────────────────────────────────────────────────────────────────
+st.sidebar.title("Observatoire Paris-Saclay")
+st.sidebar.image("logo_paris_saclay.png", width=180)
 
-# Exemples d’indicateurs fictifs (à remplacer par tes données réelles)
-kpi_data = {
-    "Population totale": "785 420 hab.",
-    "Croissance annuelle": "+2.8 %",
-    "Emplois tech / R&D": "142 000",
-    "Startups actives": "1 620",
-    "Satisfaction résidents": "86.4 %"
-}
+page = st.sidebar.radio("Navigation", [
+    "Accueil",
+    "Population",
+    "Emploi / Chômage",
+    "Économie",
+    "Social / Ménages",
+    "Santé",
+    "Éducation",
+    "Sports",
+    "Finance (restreint)"
+])
 
-cols = st.columns(5)
-for col, (label, value) in zip(cols, kpi_data.items()):
-    with col:
-        st.markdown(f"""
-        <div class="kpi-card">
-            <h3>{label}</h3>
-            <div class="kpi-number">{value}</div>
+# ─── Hero (sur toutes les pages sauf Finance) ───────────────────────────────────
+if page != "Finance (restreint)":
+    st.markdown("""
+    <div class="hero">
+        <div>
+            <h1>Observatoire Territorial</h1>
+            <p class="hero-subtitle">
+                Agglomération Paris-Saclay – Indicateurs stratégiques en temps réel
+            </p>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
-# ─── Section Population (premier exemple avec vrai CSV) ────────────────────────
-st.header("Population – Indicateurs clés")
+# ─── Contenu par page ───────────────────────────────────────────────────────────
+if page == "Accueil":
+    st.title("Bienvenue dans l'Observatoire")
+    st.markdown("""
+    Cet espace permet de suivre les principaux indicateurs de l'agglomération Paris-Saclay.
 
-pop_df = load_data("POP_RECENSEMENT.csv")
+    **Sélectionnez une thématique** dans la barre latérale pour explorer les données.
+    """)
 
-if not pop_df.empty:
-    # Nettoyage léger des colonnes
-    pop_df = pop_df.rename(columns=lambda x: x.strip())
-    if "Valeur" in pop_df.columns:
-        pop_df["Valeur"] = pd.to_numeric(pop_df["Valeur"], errors="coerce")
+    # KPI fictifs (à remplacer par vrais calculs plus tard)
+    cols = st.columns(4)
+    cols[0].metric("Population", "785 420", "+2.8 %")
+    cols[1].metric("Emplois tech", "142 000", "+19 %")
+    cols[2].metric("Startups", "1 620", "dont 14 licornes")
+    cols[3].metric("Satisfaction", "86.4 %", "résidents 2025")
 
-    # Indicateur 1 : Population totale par période (agrégation simple)
-    st.subheader("Population totale par période")
-    total_pop = pop_df[pop_df["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
-    fig_pop = px.line(total_pop, x="Période", y="Valeur", title="Évolution population totale")
-    st.plotly_chart(fig_pop, use_container_width=True)
+elif page == "Population":
+    st.title("Population")
+    df = load_data("POP_RECENSEMENT.csv")
 
-    # Indicateur 2 : Répartition par sexe (exemple)
-    st.subheader("Répartition par sexe (dernière période)")
-    last_period = pop_df["Période"].max()
-    sex_df = pop_df[(pop_df["Période"] == last_period) & (pop_df["Sexe"] != "Total")]
-    fig_sex = px.pie(sex_df, values="Valeur", names="Sexe", title=f"Répartition par sexe en {last_period}")
-    st.plotly_chart(fig_sex, use_container_width=True)
+    if not df.empty:
+        st.subheader("Population totale par période")
+        total = df[df["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
+        fig = px.line(total, x="Période", y="Valeur", title="Évolution population")
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Tableau brut (extrait)
-    st.subheader("Extrait des données brutes")
-    st.dataframe(pop_df.head(10))
-else:
-    st.warning("Impossible de charger POP_RECENSEMENT.csv depuis GitHub")
+        st.subheader("Répartition par sexe (dernière période)")
+        last = df["Période"].max()
+        sex = df[(df["Période"] == last) & (df["Sexe"] != "Total")]
+        fig_pie = px.pie(sex, values="Valeur", names="Sexe")
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+        st.subheader("Extrait données")
+        st.dataframe(df.head(10))
+    else:
+        st.warning("Données non disponibles")
+
+elif page == "Emploi / Chômage":
+    st.title("Emploi / Chômage")
+    df = load_data("POP_CHOMAGE_DARES.csv")
+
+    if not df.empty:
+        st.dataframe(df.head(10))
+        st.info("Graphiques et filtres à venir")
+    else:
+        st.warning("Données non disponibles")
+
+elif page == "Économie":
+    st.title("Économie")
+    files = ["ECO_ENT_CREATION.csv", "ECO_ETAB_FLORES_5.csv", "ECO_ETAB_STOCKS.csv"]
+    for f in files:
+        df = load_data(f)
+        if not df.empty:
+            st.subheader(f.replace(".csv", ""))
+            st.dataframe(df.head(8))
+
+elif page == "Social / Ménages":
+    st.title("Social / Ménages")
+    files = ["POP_MENAGES.csv", "POP_FILOSOFI_MENAGE_MONO.csv", "POP_FILOSOFI_AGE.csv"]
+    for f in files:
+        df = load_data(f)
+        if not df.empty:
+            st.subheader(f.replace(".csv", ""))
+            st.dataframe(df.head(8))
+
+elif page == "Santé":
+    st.title("Santé")
+    st.info("Indicateurs santé à venir (données non encore intégrées)")
+
+elif page == "Éducation":
+    st.title("Éducation")
+    st.info("Indicateurs éducation à venir (données non encore intégrées)")
+
+elif page == "Sports":
+    st.title("Sports")
+    st.info("Indicateurs sports à venir (données non encore intégrées)")
+
+elif page == "Finance (restreint)":
+    st.title("Finance – Accès restreint")
+    password = st.text_input("Mot de passe", type="password")
+    if password == "paris-saclay2026":  # ← change ce mot de passe !!!
+        st.success("Accès autorisé")
+        st.info("Données financières sensibles – à venir")
+    else:
+        st.error("Mot de passe incorrect")
 
 # ─── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="text-align:center; color:#64748b; margin:120px 0 40px;">
-    © Communauté Paris-Saclay | Données février 2026 | App déployée via Streamlit Cloud
+<div style="text-align:center; color:#64748b; margin:100px 0 40px;">
+    © Communauté Paris-Saclay | Données février 2026 | App Streamlit
 </div>
 """, unsafe_allow_html=True)
