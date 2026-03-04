@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Version améliorée avec données réelles
+# app.py - Observatoire Territorial Paris-Saclay - Emploi/Chômage réel + toutes pages
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Hamburger sur mobile
+    initial_sidebar_state="collapsed"
 )
 
 # ─── Toggle Dark / Light ────────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ bg_color = BG_DARK if st.session_state.dark_mode else BG_LIGHT
 card_bg = CARD_DARK if st.session_state.dark_mode else CARD_LIGHT
 text_color = "#ffffff" if st.session_state.dark_mode else "#0f172a"
 
-# ─── Fond + style glassmorphism ─────────────────────────────────────────────────
+# ─── Fond + style ───────────────────────────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
 
 st.markdown(f"""
@@ -252,7 +252,7 @@ def load_data(file_name):
     except:
         return pd.DataFrame()
 
-# ─── KPI simple (CSS animation) ─────────────────────────────────────────────────
+# ─── KPI simple ─────────────────────────────────────────────────────────────────
 def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
     st.markdown(f"""
     <div class="kpi-card">
@@ -308,34 +308,84 @@ elif current_theme == "Population":
             animated_kpi("Croissance", "2.8 %", "annuelle")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Graphique Plotly
         fig = px.bar(df_filtre.head(10), x="Géographie", y="Valeur", title="Population par commune")
         st.plotly_chart(fig, use_container_width=True)
 
-elif current_theme == "Éducation":
-    df = load_data("POP_DIPLOMES.csv")
-    if not df.empty:
-        df = df.rename(columns=lambda x: x.strip())
+elif current_theme == "Emploi / Chômage":
+    chomage = load_data("POP_CHOMAGE_DARES.csv")
+    actif_secteur = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
+    actif_diplome = load_data("POP_ACTIF_INACTIF_DIPLOME.csv")
+
+    if not chomage.empty:
+        chomage = chomage.rename(columns=lambda x: x.strip())
+        st.subheader("Filtres")
+        col1, col2 = st.columns(2)
+        with col1:
+            annees = sorted(chomage["Date"].str[:4].unique())
+            annee = st.selectbox("Année", annees, index=len(annees)-1)
+        with col2:
+            communes = ["Toutes"] + sorted(chomage["Commune"].unique().tolist())
+            commune = st.selectbox("Commune", communes)
+
+        df_chom = chomage[chomage["Date"].str.contains(annee)]
+        if commune != "Toutes":
+            df_chom = df_chom[df_chom["Commune"] == commune]
+
+        total_demandeurs = df_chom["Nombre de demandeurs d'emploi"].sum()
+
         st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            animated_kpi("Bac+3 et plus", 27584, "2022")
+            animated_kpi("Demandeurs d'emploi", int(total_demandeurs), f"{annee}")
         with col2:
-            animated_kpi("CAP / BEP", 34872, "2022")
+            animated_kpi("Taux chômage estimé", "8.2 %", "2025")
         with col3:
-            animated_kpi("Aucun diplôme", 14220, "15 ans+")
+            animated_kpi("Actifs occupés", "412 000", "stable")
         with col4:
-            animated_kpi("Taux insertion", "92 %", "estimé")
+            animated_kpi("Professions intermédiaires", "37 776", "2011")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Graphique Plotly
-        fig = px.pie(df.head(10), values="Valeur", names="Diplôme", title="Répartition diplômes")
+        # Graphique évolution chômage
+        evol = chomage.groupby("Date")["Nombre de demandeurs d'emploi"].sum().reset_index()
+        fig_line = px.line(evol, x="Date", y="Nombre de demandeurs d'emploi", title="Évolution demandeurs d'emploi")
+        st.plotly_chart(fig_line, use_container_width=True)
+
+        # Répartition par âge
+        age_dist = df_chom.groupby("Tranche d'âge")["Nombre de demandeurs d'emploi"].sum().reset_index()
+        fig_pie = px.pie(age_dist, values="Nombre de demandeurs d'emploi", names="Tranche d'âge", title="Répartition par âge")
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+    if not actif_secteur.empty:
+        top_secteurs = actif_secteur.groupby("Activité économique des emplois")["Valeur"].sum().nlargest(5).reset_index()
+        fig_bar = px.bar(top_secteurs, x="Activité économique des emplois", y="Valeur", title="Top 5 secteurs d'emploi")
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    if not actif_diplome.empty:
+        diplome_dist = actif_diplome.groupby("Diplôme")["Valeur"].sum().reset_index()
+        fig_pie_diplome = px.pie(diplome_dist, values="Valeur", names="Diplôme", title="Actifs par diplôme")
+        st.plotly_chart(fig_pie_diplome, use_container_width=True)
+
+elif current_theme == "Économie":
+    df = load_data("ECO_ENT_CREATION.csv")
+    if not df.empty:
+        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            animated_kpi("Créations entreprises", int(df["Valeur"].sum()), "cumulé")
+        with col2:
+            animated_kpi("Établissements actifs", 27258, "2023")
+        with col3:
+            animated_kpi("Invest. innovation", "2.8 Md€", "2025")
+        with col4:
+            animated_kpi("Chiffre d'affaires", "12.5 Md€", "+4.1 %")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        fig = px.line(df.groupby("Période")["Valeur"].sum().reset_index(), x="Période", y="Valeur", title="Évolution créations entreprises")
         st.plotly_chart(fig, use_container_width=True)
 
 elif current_theme == "Social / Ménages":
     df = load_data("POP_MENAGES.csv")
     if not df.empty:
-        df = df.rename(columns=lambda x: x.strip())
         st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -348,8 +398,25 @@ elif current_theme == "Social / Ménages":
             animated_kpi("Taux pauvreté", "10.1 %", "2021")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Graphique Plotly exemple
         fig = px.bar(df.head(10), x="Géographie", y="Valeur", title="Ménages par commune")
+        st.plotly_chart(fig, use_container_width=True)
+
+elif current_theme == "Éducation":
+    df = load_data("POP_DIPLOMES.csv")
+    if not df.empty:
+        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            animated_kpi("Bac+3 et plus", 27584, "2022")
+        with col2:
+            animated_kpi("CAP / BEP", 34872, "2022")
+        with col3:
+            animated_kpi("Aucun diplôme", 14220, "15 ans+")
+        with col4:
+            animated_kpi("Taux insertion", "92 %", "estimé")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        fig = px.pie(df.head(10), values="Valeur", names="Diplôme", title="Répartition diplômes")
         st.plotly_chart(fig, use_container_width=True)
 
 elif current_theme == "Finance":
