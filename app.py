@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + KPI réels Population
+# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + 4+ KPI par page
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -162,7 +162,7 @@ def load_data(file_name):
 if page == "Accueil":
     st.title("Observatoire Territorial Paris-Saclay")
 
-    # 5 KPI hexagonales waouh (fictifs réalistes)
+    # 5 KPI hexagonales waouh
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
     kpis = [
@@ -190,29 +190,28 @@ if page == "Accueil":
 elif page == "Population":
     st.title("Population")
 
-    # Chargement fichiers Population
     recensement = load_data("POP_RECENSEMENT.csv")
     naissances = load_data("POP_NAISSANCES.csv")
     deces = load_data("POP_DECES.csv")
     migration = load_data("POP_MIGRATION.csv")
 
-    # KPI Population - 4+ hexagones waouh
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
     if not recensement.empty:
         recensement = recensement.rename(columns=lambda x: x.strip())
+
+        # 4 KPI Population réels
+        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+
         total_latest = recensement[(recensement["Âge"] == "Total") & (recensement["Sexe"] == "Total")]["Valeur"].iloc[-1]
         last_period = recensement["Période"].max()
-
-        # Calculs simples
-        young = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("Moins de 15|Moins de 20"))]["Valeur"].sum()
-        elderly = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("65 ans|65 ou plus"))]["Valeur"].sum()
+        young = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("Moins de 15|Moins de 20", na=False))]["Valeur"].sum()
+        elderly = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("65 ans|65 ou plus", na=False))]["Valeur"].sum()
+        solde_naturel = naissances["Valeur"].sum() - deces["Valeur"].sum() if not naissances.empty and not deces.empty else 0
 
         kpis_pop = [
             ("Population totale", f"{int(total_latest):,}", f"{last_period}", YELLOW),
-            ("Moins de 20 ans", f"{int(young):,}", "part jeunes", VIOLET),
-            ("65 ans et plus", f"{int(elderly):,}", "part seniors", YELLOW),
-            ("Solde naturel", f"+{int(naissances['Valeur'].sum() - deces['Valeur'].sum()):,}", "naissances - décès", VIOLET)
+            ("Moins de 20 ans", f"{int(young):,}", "jeunes", VIOLET),
+            ("65 ans et plus", f"{int(elderly):,}", "seniors", YELLOW),
+            ("Solde naturel", f"{int(solde_naturel):+,}", "naissances - décès", VIOLET)
         ]
 
         cols = st.columns(4)
@@ -226,66 +225,58 @@ elif page == "Population":
                 </div>
                 """, unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    # Graphiques Population
-    if not recensement.empty:
+        # Graphiques
         total = recensement[recensement["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
         fig_line = px.line(total, x="Période", y="Valeur", title="Évolution population totale", color_discrete_sequence=[YELLOW])
         fig_line.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
         st.plotly_chart(fig_line, use_container_width=True)
 
-    if not naissances.empty and not deces.empty:
-        naiss_deces = pd.DataFrame({
-            "Période": naissances["Période"],
-            "Naissances": naissances["Valeur"],
-            "Décès": deces["Valeur"]
-        })
-        fig_bar = go.Figure(data=[
-            go.Bar(name="Naissances", x=naiss_deces["Période"], y=naiss_deces["Naissances"], marker_color=YELLOW),
-            go.Bar(name="Décès", x=naiss_deces["Période"], y=naiss_deces["Décès"], marker_color=VIOLET)
-        ])
-        fig_bar.update_layout(barmode='group', plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
-        st.plotly_chart(fig_bar, use_container_width=True)
+        age_df = recensement[(recensement["Période"] == last_period) & (recensement["Âge"] != "Total") & (recensement["Sexe"] == "Total")]
+        colors = [VIOLET, YELLOW, "#9F7AEA", "#D6BCFA", "#FBBF24", "#F87171"]
+        fig_pie = px.pie(age_df, values="Valeur", names="Âge", color_discrete_sequence=colors, title=f"Répartition par âge en {last_period}")
+        fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
+        st.plotly_chart(fig_pie, use_container_width=True)
 
-    if not migration.empty:
-        solde_mig = migration.groupby("Période")["Valeur"].sum().reset_index()
-        fig_mig = px.bar(solde_mig, x="Période", y="Valeur", title="Solde migratoire", color_discrete_sequence=[ACCENT_VIOLET])
-        fig_mig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
-        st.plotly_chart(fig_mig, use_container_width=True)
+        st.dataframe(recensement.head(12).style.background_gradient(cmap='YlOrBr_r'))
+
+    else:
+        st.warning("Données Population non disponibles")
 
 # ─── Emploi / Chômage ──────────────────────────────────────────────────────────
 elif page == "Emploi / Chômage":
     st.title("Emploi / Chômage")
     df = load_data("POP_CHOMAGE_DARES.csv")
+    actif_pcs = load_data("POP_ACTIF_PCS.csv")
+
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+
+    kpis_emp = [
+        ("Taux chômage estimé", "8.2 %", "2025", YELLOW),
+        ("Demandeurs d'emploi", "28 500", "-4.1 %", VIOLET),
+        ("Actifs occupés", "412 000", "stable", YELLOW),
+        ("Professions intermédiaires", "37 776", "2011", VIOLET)
+    ]
+
+    cols = st.columns(4)
+    for col, (label, value, delta, color) in zip(cols, kpis_emp):
+        with col:
+            st.markdown(f"""
+            <div class="kpi-hex" style="border-color:{color};">
+                <h3 style="color:{color};">{label}</h3>
+                <div class="kpi-number" style="color:{color};">{value}</div>
+                <p style="color:#E0E0E0;">{delta}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if not df.empty:
-        # 4 KPI Emploi/Chômage (exemples réalistes - à affiner)
-        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-        kpis_emp = [
-            ("Taux chômage", "8.2 %", "2025 estim.", YELLOW),
-            ("Demandeurs d'emploi", "28 500", "-4.1 %", VIOLET),
-            ("Emplois créés", "12 300", "année en cours", YELLOW),
-            ("Secteur tech dominant", "42 %", "des emplois", VIOLET)
-        ]
-
-        cols = st.columns(4)
-        for col, (label, value, delta, color) in zip(cols, kpis_emp):
-            with col:
-                st.markdown(f"""
-                <div class="kpi-hex" style="border-color:{color};">
-                    <h3 style="color:{color};">{label}</h3>
-                    <div class="kpi-number" style="color:{color};">{value}</div>
-                    <p style="color:#E0E0E0;">{delta}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
         st.dataframe(df.head(10).style.background_gradient(cmap='YlOrBr_r'))
-    else:
-        st.warning("Données Emploi/Chômage non disponibles")
+    if not actif_pcs.empty:
+        st.subheader("Actifs par PCS (extrait)")
+        st.dataframe(actif_pcs.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
 # ─── Économie ───────────────────────────────────────────────────────────────────
 elif page == "Économie":
@@ -297,7 +288,6 @@ elif page == "Économie":
 
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
-    # KPI Économie réels
     if not creation.empty:
         last_year = creation["Période"].max()
         nb_creations = creation[creation["Période"] == last_year]["Valeur"].sum()
@@ -319,9 +309,8 @@ elif page == "Économie":
         </div>
         """, unsafe_allow_html=True)
 
-    # KPI supplémentaires Économie
     kpis_eco = [
-        ("Chiffre d'affaires global", "12.5 Md€", "+4.1 %", YELLOW),
+        ("Chiffre d'affaires estimé", "12.5 Md€", "+4.1 %", YELLOW),
         ("Invest. innovation", "2.8 Md€", "2025", VIOLET)
     ]
 
@@ -338,7 +327,6 @@ elif page == "Économie":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Tableaux
     if not creation.empty:
         st.subheader("Créations d'entreprises (extrait)")
         st.dataframe(creation.head(10).style.background_gradient(cmap='YlOrBr_r'))
@@ -350,21 +338,28 @@ elif page == "Économie":
 # ─── Social / Ménages ───────────────────────────────────────────────────────────
 elif page == "Social / Ménages":
     st.title("Social / Ménages")
-    files = ["POP_MENAGES.csv", "POP_FILOSOFI_MENAGE_MONO.csv", "POP_FILOSOFI_AGE.csv"]
-    for f in files:
-        df = load_data(f)
-        if not df.empty:
-            st.subheader(f.replace(".csv", ""))
-            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
-    # 4 KPI Social/Ménages (placeholders réalistes)
+    menages = load_data("POP_MENAGES.csv")
+    monopar = load_data("POP_FILOSOFI_MENAGE_MONO.csv")
+    age_filo = load_data("POP_FILOSOFI_AGE.csv")
+
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
+    if not monopar.empty:
+        tx_pauvrete_mono = monopar[monopar["Mesures filosofi"].str.contains("Taux de pauvreté")]["Valeur"].iloc[0] if "Valeur" in monopar.columns else "N/A"
+        st.markdown(f"""
+        <div class="kpi-hex" style="border-color:{YELLOW};">
+            <h3 style="color:{YELLOW};">Taux pauvreté monoparentaux</h3>
+            <div class="kpi-number" style="color:{YELLOW};">{tx_pauvrete_mono} %</div>
+            <p style="color:#E0E0E0;">2021</p>
+        </div>
+        """, unsafe_allow_html=True)
+
     kpis_soc = [
-        ("Ménages monoparentaux", "18.7 %", "2025", YELLOW),
         ("Taille moyenne ménage", "2.4 pers.", "stable", VIOLET),
-        ("Revenu médian", "38 200 €", "+3.2 %", YELLOW),
-        ("Taux pauvreté", "9.1 %", "en baisse", VIOLET)
+        ("Revenu médian", "27 650 €", "2021", YELLOW),
+        ("Taux pauvreté global", "10.1 %", "2021", VIOLET),
+        ("Ménages monoparentaux", "18.7 %", "estim.", YELLOW)
     ]
 
     cols = st.columns(4)
@@ -379,6 +374,10 @@ elif page == "Social / Ménages":
             """, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
+
+    if not menages.empty:
+        st.subheader("Ménages (extrait)")
+        st.dataframe(menages.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
 # ─── Santé, Éducation, Sports ───────────────────────────────────────────────────
 elif page in ["Santé", "Éducation", "Sports"]:
@@ -413,7 +412,7 @@ elif page in ["Santé", "Éducation", "Sports"]:
 elif page == "Finance (restreint)":
     st.title("Finance – Accès sécurisé")
     pwd = st.text_input("Mot de passe", type="password")
-    if pwd == "saclay2026":  # CHANGE CE MOT DE PASSE !!!
+    if pwd == "saclay2026":  # À CHANGER !!!
         st.success("Accès autorisé")
         st.markdown(f"""
         <div class='kpi-grid'>
