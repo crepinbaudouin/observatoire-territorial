@@ -1,24 +1,20 @@
-# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh complet
+# app.py - Observatoire Territorial Paris-Saclay - Style maquette 2026
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-import time
+from streamlit.components.v1 import html
+import base64
 
-# ─── Config ─────────────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Observatoire Territorial Paris-Saclay",
-    page_icon="🛰️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Config
+st.set_page_config(page_title="Observatoire Territorial Paris-Saclay", layout="wide", initial_sidebar_state="collapsed")
 
-# ─── Fond d'écran sur TOUTES les pages ─────────────────────────────────────────
-fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
+# Fond d'écran
+fond_path = "page accueil.jpg"  # ou URL si hébergé
+with open(fond_path, "rb") as f:
+    fond_base64 = base64.b64encode(f.read()).decode()
 
 st.markdown(f"""
     <style>
         .stApp {{
-            background-image: url({fond_url});
+            background-image: url("data:image/jpeg;base64,{fond_base64}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -27,368 +23,209 @@ st.markdown(f"""
         .stApp::before {{
             content: "";
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(26, 31, 46, 0.78);  /* Gris foncé semi-transparent */
-            z-index: -1;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.65));
+            z-index: -2;
+        }}
+        /* Bandeau navigation horizontal */
+        .nav-bar {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding: 12px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 999;
+        }}
+        .nav-links {{
+            display: flex;
+            gap: 32px;
+        }}
+        .nav-links a {{
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }}
+        .nav-links a:hover {{
+            color: #FDD100;
+            text-shadow: 0 0 12px #FDD10080;
+        }}
+        .finance-btn {{
+            background: linear-gradient(45deg, #6A1B9A, #9F7AEA);
+            color: white;
+            padding: 10px 28px;
+            border-radius: 50px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(106,27,154,0.4);
+            transition: all 0.3s;
+        }}
+        .finance-btn:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(106,27,154,0.6);
+        }}
+        /* Hero central */
+        .hero {{
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 0 10%;
+        }}
+        .hero h1 {{
+            font-size: 5.8rem;
+            margin: 0;
+            background: linear-gradient(90deg, #FDD100, #9F7AEA, #FDD100);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientFlow 12s ease infinite;
+        }}
+        @keyframes gradientFlow {{
+            0% {{ background-position: 0% 50%; }}
+            100% {{ background-position: 200% 50%; }}
+        }}
+        .hero .play-btn {{
+            margin-top: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(253,209,0,0.25);
+            border: 3px solid #FDD100;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.4s;
+        }}
+        .hero .play-btn:hover {{
+            background: rgba(253,209,0,0.45);
+            transform: scale(1.15);
+        }}
+        /* Login modal Finance */
+        .finance-modal {{
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }}
+        .modal-content {{
+            background: rgba(26,31,46,0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid #6A1B9A;
+            border-radius: 20px;
+            padding: 40px;
+            width: 420px;
+            text-align: center;
+            color: white;
+        }}
+        .modal-content input {{
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border-radius: 8px;
+            border: 1px solid #6A1B9A;
+            background: rgba(255,255,255,0.08);
+            color: white;
+        }}
+        .modal-content button {{
+            background: linear-gradient(45deg, #6A1B9A, #9F7AEA);
+            color: white;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
         }}
     </style>
 """, unsafe_allow_html=True)
 
-# ─── Couleurs charte Paris-Saclay ──────────────────────────────────────────────
-YELLOW = "#FDD100"
-VIOLET = "#6A1B9A"
-ACCENT_YELLOW = "#FFE066"
-ACCENT_VIOLET = "#9F7AEA"
-
-# ─── CSS waouh ──────────────────────────────────────────────────────────────────
-st.markdown(f"""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-    body, .stApp {{
-        color: #FFFFFF;
-        font-family: 'Inter', sans-serif;
-    }}
-
-    .hero {{
-        height: 70vh;
-        background: linear-gradient(135deg, rgba(106,27,154,0.65), rgba(0,0,0,0.8));
-        background-size: cover;
-        background-position: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        border-radius: 0 0 40px 40px;
-        box-shadow: 0 30px 80px rgba(0,0,0,0.8);
-    }}
-
-    .hero h1 {{
-        font-size: 5.5rem;
-        font-weight: 900;
-        background: linear-gradient(90deg, {YELLOW}, {ACCENT_VIOLET}, {YELLOW});
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: gradientFlow 10s ease infinite;
-        text-shadow: 0 0 35px rgba(253, 209, 0, 0.9);
-    }}
-
-    @keyframes gradientFlow {{
-        0% {{ background-position: 0% 50%; }}
-        100% {{ background-position: 200% 50%; }}
-    }}
-
-    .kpi-grid {{
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-        gap: 40px;
-        margin: 80px 0;
-    }}
-
-    .kpi-hex {{
-        background: rgba(26, 31, 46, 0.92);
-        backdrop-filter: blur(24px);
-        border: 3px solid {VIOLET};
-        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-        padding: 52px 36px;
-        text-align: center;
-        transition: all 0.6s;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-    }}
-
-    .kpi-hex:hover {{
-        transform: scale(1.14) rotate(3deg);
-        border-color: {YELLOW};
-        box-shadow: 0 50px 140px rgba(253, 209, 0, 0.7);
-    }}
-
-    .kpi-number {{
-        font-size: 5rem;
-        font-weight: 900;
-        color: {ACCENT_YELLOW};
-        margin: 20px 0 16px;
-        text-shadow: 0 0 35px rgba(253, 209, 0, 0.9);
-    }}
-
-    .sidebar .sidebar-content {{
-        background: rgba(10, 14, 23, 0.98) !important;
-        backdrop-filter: blur(20px) !important;
-        border-right: 2px solid {VIOLET};
-    }}
-
-    footer {{visibility: hidden;}}
-    </style>
-""", unsafe_allow_html=True)
-
-# ─── Sidebar ────────────────────────────────────────────────────────────────────
-st.sidebar.title("Paris-Saclay")
-st.sidebar.image("logo_paris_saclay.png", width=220)
-
-page = st.sidebar.radio("Thématiques", [
-    "Accueil",
-    "Population",
-    "Emploi / Chômage",
-    "Économie",
-    "Social / Ménages",
-    "Santé",
-    "Éducation",
-    "Sports",
-    "Finance (restreint)"
-])
-
-# ─── Chargement données GitHub raw ──────────────────────────────────────────────
-@st.cache_data
-def load_data(file_name):
-    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
-    try:
-        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
-    except:
-        return pd.DataFrame()
-
-# ─── Compteur animé ─────────────────────────────────────────────────────────────
-def animated_counter(label, final_value, delta="", color=YELLOW, duration=2.0):
-    placeholder = st.empty()
-    start = time.time()
-    value = 0
-    final_value = float(final_value)  # Sécurité
-    while time.time() - start < duration:
-        progress = (time.time() - start) / duration
-        current = int(final_value * progress)
-        placeholder.markdown(f"""
-        <div class="kpi-hex" style="border-color:{color};">
-            <h3 style="color:{color};">{label}</h3>
-            <div class="kpi-number" style="color:{color};">{current:,}</div>
-            <p style="color:#E0E0E0;">{delta}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        time.sleep(0.03)
-    placeholder.markdown(f"""
-    <div class="kpi-hex" style="border-color:{color};">
-        <h3 style="color:{color};">{label}</h3>
-        <div class="kpi-number" style="color:{color};">{int(final_value):,}</div>
-        <p style="color:#E0E0E0;">{delta}</p>
+# ─── Bandeau navigation horizontal ──────────────────────────────────────────────
+st.markdown("""
+<div class="nav-bar">
+    <div style="font-size:1.6rem; font-weight:bold; color:#FDD100;">
+        Observatoire Paris-Saclay
     </div>
-    """, unsafe_allow_html=True)
-
-# ─── Accueil ────────────────────────────────────────────────────────────────────
-if page == "Accueil":
-    st.title("Observatoire Territorial Paris-Saclay")
-
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-    cols = st.columns(5)
-
-    with cols[0]:
-        animated_counter("Population totale", 785420, "+2.8 %", YELLOW)
-
-    with cols[1]:
-        animated_counter("Emplois tech & R&D", 142000, "+19 %", VIOLET)
-
-    with cols[2]:
-        animated_counter("Startups actives", 1620, "14 licornes", YELLOW)
-
-    with cols[3]:
-        animated_counter("Satisfaction résidents", 86.4, "2025", VIOLET)
-
-    with cols[4]:
-        animated_counter("Investissements R&D", 3800000000, "cumulé", YELLOW)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ─── Population ─────────────────────────────────────────────────────────────────
-elif page == "Population":
-    st.title("Population")
-
-    recensement = load_data("POP_RECENSEMENT.csv")
-    naissances = load_data("POP_NAISSANCES.csv")
-    deces = load_data("POP_DECES.csv")
-    migration = load_data("POP_MIGRATION.csv")
-
-    if not recensement.empty:
-        recensement = recensement.rename(columns=lambda x: x.strip())
-
-        # Filtres interactifs
-        st.subheader("Filtres")
-        col1, col2 = st.columns(2)
-        with col1:
-            annees = sorted(recensement["Période"].unique())
-            annee_selectionnee = st.selectbox("Année", annees, index=len(annees)-1)
-
-        with col2:
-            communes = ["Toutes"] + sorted(recensement["Géographie"].unique().tolist())
-            commune_selectionnee = st.selectbox("Commune / Niveau", communes)
-
-        # Filtrage
-        df_filtre = recensement[recensement["Période"] == annee_selectionnee]
-        if commune_selectionnee != "Toutes":
-            df_filtre = df_filtre[df_filtre["Géographie"] == commune_selectionnee]
-
-        # 5 KPI Population animés
-        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-        total_latest = df_filtre[(df_filtre["Âge"] == "Total") & (df_filtre["Sexe"] == "Total")]["Valeur"].sum()
-        young = df_filtre[(df_filtre["Âge"].str.contains("Moins de 15|Moins de 20", na=False))]["Valeur"].sum()
-        elderly = df_filtre[(df_filtre["Âge"].str.contains("65 ans|65 ou plus", na=False))]["Valeur"].sum()
-        solde_naturel = naissances[naissances["Période"] == annee_selectionnee]["Valeur"].sum() - deces[deces["Période"] == annee_selectionnee]["Valeur"].sum() if not naissances.empty and not deces.empty else 0
-        solde_mig = migration[migration["Période"] == annee_selectionnee]["Valeur"].sum() if not migration.empty else "N/A"
-
-        kpis_pop = [
-            ("Population totale", int(total_latest), f"{annee_selectionnee}", YELLOW),
-            ("Moins de 20 ans", int(young), "jeunes", VIOLET),
-            ("65 ans et plus", int(elderly), "seniors", YELLOW),
-            ("Solde naturel", int(solde_naturel), "naissances - décès", VIOLET),
-            ("Solde migratoire", solde_mig, "cumulé", YELLOW)
-        ]
-
-        cols = st.columns(5)
-        for col, (label, value, delta, color) in zip(cols, kpis_pop):
-            with col:
-                animated_counter(label, value, delta, color)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # Graphiques filtrés
-        total = df_filtre[df_filtre["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
-        fig_line = px.line(total, x="Période", y="Valeur", title=f"Évolution population - {commune_selectionnee}", color_discrete_sequence=[YELLOW])
-        fig_line.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
-        st.plotly_chart(fig_line, use_container_width=True)
-
-        age_df = df_filtre[(df_filtre["Âge"] != "Total") & (df_filtre["Sexe"] == "Total")]
-        colors = [VIOLET, YELLOW, "#9F7AEA", "#D6BCFA", "#FBBF24", "#F87171"]
-        fig_pie = px.pie(age_df, values="Valeur", names="Âge", color_discrete_sequence=colors, title=f"Répartition par âge en {annee_selectionnee}")
-        fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-        st.dataframe(df_filtre.head(12).style.background_gradient(cmap='YlOrBr_r'))
-
-    else:
-        st.warning("Données Population non disponibles")
-
-# ─── Emploi / Chômage ──────────────────────────────────────────────────────────
-elif page == "Emploi / Chômage":
-    st.title("Emploi / Chômage")
-
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-    kpis_emp = [
-        ("Taux chômage estimé", 8.2, "% 2025", YELLOW),
-        ("Demandeurs d'emploi", 28500, "-4.1 %", VIOLET),
-        ("Actifs occupés", 412000, "stable", YELLOW),
-        ("Professions intermédiaires", 37776, "2011", VIOLET)
-    ]
-
-    cols = st.columns(4)
-    for col, (label, value, delta, color) in zip(cols, kpis_emp):
-        with col:
-            animated_counter(label, value, delta, color)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ─── Économie ───────────────────────────────────────────────────────────────────
-elif page == "Économie":
-    st.title("Économie")
-
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-    kpis_eco = [
-        ("Créations entreprises", 1620, "2024", YELLOW),
-        ("Établissements actifs", 27258, "2023", VIOLET),
-        ("Invest. innovation", 2800000000, "2025", YELLOW),
-        ("Chiffre d'affaires estimé", 12500000000, "+4.1 %", VIOLET)
-    ]
-
-    cols = st.columns(4)
-    for col, (label, value, delta, color) in zip(cols, kpis_eco):
-        with col:
-            animated_counter(label, value, delta, color)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ─── Social / Ménages ───────────────────────────────────────────────────────────
-elif page == "Social / Ménages":
-    st.title("Social / Ménages")
-
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-
-    kpis_soc = [
-        ("Ménages monoparentaux", 18.7, "% 2021", YELLOW),
-        ("Taille moyenne ménage", 2.4, "pers.", VIOLET),
-        ("Revenu médian", 27650, "€ 2021", YELLOW),
-        ("Taux pauvreté global", 10.1, "% 2021", VIOLET)
-    ]
-
-    cols = st.columns(4)
-    for col, (label, value, delta, color) in zip(cols, kpis_soc):
-        with col:
-            animated_counter(label, value, delta, color)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ─── Santé, Éducation, Sports ───────────────────────────────────────────────────
-elif page in ["Santé", "Éducation", "Sports"]:
-    st.title(page)
-    st.markdown(f"""
-    <div class='kpi-grid'>
-        <div class="kpi-hex" style="border-color:{YELLOW};">
-            <h3 style="color:{YELLOW};">Indicateur 1</h3>
-            <div class="kpi-number" style="color:{YELLOW};">En cours</div>
-            <p style="color:#E0E0E0;">Données à venir</p>
-        </div>
-        <div class="kpi-hex" style="border-color:{VIOLET};">
-            <h3 style="color:{VIOLET};">Indicateur 2</h3>
-            <div class="kpi-number" style="color:{VIOLET};">En cours</div>
-            <p style="color:#E0E0E0;">Données à venir</p>
-        </div>
-        <div class="kpi-hex" style="border-color:{YELLOW};">
-            <h3 style="color:{YELLOW};">Indicateur 3</h3>
-            <div class="kpi-number" style="color:{YELLOW};">En cours</div>
-            <p style="color:#E0E0E0;">Données à venir</p>
-        </div>
-        <div class="kpi-hex" style="border-color:{VIOLET};">
-            <h3 style="color:{VIOLET};">Indicateur 4</h3>
-            <div class="kpi-number" style="color:{VIOLET};">En cours</div>
-            <p style="color:#E0E0E0;">Données à venir</p>
-        </div>
+    <div class="nav-links">
+        <a href="#">Population</a>
+        <a href="#">Emploi / Chômage</a>
+        <a href="#">Économie</a>
+        <a href="#">Social / Ménages</a>
+        <a href="#">Santé</a>
+        <a href="#">Éducation</a>
+        <a href="#">Sports</a>
     </div>
-    """, unsafe_allow_html=True)
-    st.info(f"Page {page} en construction – indicateurs à venir")
-
-# ─── Finance restreinte ─────────────────────────────────────────────────────────
-elif page == "Finance (restreint)":
-    st.title("Finance – Accès sécurisé")
-    pwd = st.text_input("Mot de passe", type="password")
-    if pwd == "saclay2026":
-        st.success("Accès autorisé")
-        st.markdown(f"""
-        <div class='kpi-grid'>
-            <div class="kpi-hex" style="border-color:{YELLOW};">
-                <h3 style="color:{YELLOW};">Budget 2026</h3>
-                <div class="kpi-number" style="color:{YELLOW};">En cours</div>
-                <p style="color:#E0E0E0;">Données sensibles</p>
-            </div>
-            <div class="kpi-hex" style="border-color:{VIOLET};">
-                <h3 style="color:{VIOLET};">Investissement</h3>
-                <div class="kpi-number" style="color:{VIOLET};">En cours</div>
-                <p style="color:#E0E0E0;">Données sensibles</p>
-            </div>
-            <div class="kpi-hex" style="border-color:{YELLOW};">
-                <h3 style="color:{YELLOW};">Dette</h3>
-                <div class="kpi-number" style="color:{YELLOW};">En cours</div>
-                <p style="color:#E0E0E0;">Données sensibles</p>
-            </div>
-            <div class="kpi-hex" style="border-color:{VIOLET};">
-                <h3 style="color:{VIOLET};">Résultat net</h3>
-                <div class="kpi-number" style="color:{VIOLET};">En cours</div>
-                <p style="color:#E0E0E0;">Données sensibles</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.info("Données financières sensibles – à intégrer prochainement")
-    else:
-        st.error("Accès refusé")
-
-# ─── Footer ─────────────────────────────────────────────────────────────────────
-st.markdown(f"""
-<div style="text-align:center; color:#888; margin:120px 0 40px; font-size:0.95rem;">
-    © Communauté Paris-Saclay | Données février 2026 | Déployé via Streamlit Cloud
+    <button class="finance-btn" onclick="document.getElementById('finance-modal').style.display='flex'">
+        Finance
+    </button>
 </div>
 """, unsafe_allow_html=True)
+
+# ─── Hero central ───────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="hero">
+    <div>
+        <h1>Observatoire Territorial</h1>
+        <p style="font-size:1.8rem; margin:2rem 0; color:#E0E0E0;">
+            Suivi stratégique en temps réel – Agglomération Paris-Saclay
+        </p>
+        <div class="play-btn">▶</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ─── Modal Finance ──────────────────────────────────────────────────────────────
+st.markdown("""
+<div id="finance-modal" class="finance-modal" style="display:none;">
+    <div class="modal-content">
+        <h2 style="color:#FDD100;">Accès Finance</h2>
+        <input type="text" placeholder="Identifiant">
+        <input type="password" placeholder="Mot de passe">
+        <button>Se connecter</button>
+        <p style="margin-top:20px; font-size:0.9rem; color:#aaa;">
+            © 2023 Taipy | Mentions légales | Politique de confidentialité
+        </p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'finance-modal' || e.target.closest('.modal-content') === null) {
+            document.getElementById('finance-modal').style.display = 'none';
+        }
+    });
+</script>
+""", unsafe_allow_html=True)
+
+# ─── Contenu principal (exemple) ────────────────────────────────────────────────
+st.title("Bienvenue")
+st.write("Sélectionnez une thématique dans la barre de navigation ci-dessus.")
+
+# KPI exemple
+st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+cols = st.columns(4)
+with cols[0]:
+    st.markdown(f"""
+    <div class="kpi-hex" style="border-color:{YELLOW};">
+        <h3 style="color:{YELLOW};">Population</h3>
+        <div class="kpi-number" style="color:{YELLOW};">785 420</div>
+    </div>
+    """, unsafe_allow_html=True)
+# ... ajoute les autres KPI ici
+
+st.markdown("</div>", unsafe_allow_html=True)
