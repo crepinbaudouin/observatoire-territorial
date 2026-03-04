@@ -1,26 +1,30 @@
-# app.py - Observatoire Territorial Paris-Saclay - Navigation horizontale + responsive + dark/light
+# app.py - version corrigée
+
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import time
 
-# ─── Config ─────────────────────────────────────────────────────────────────────
+# ─── COULEURS (à mettre TOUT EN HAUT) ──────────────────────────────────────────
+YELLOW = "#FDD100"
+VIOLET = "#6A1B9A"
+ACCENT_YELLOW = "#FFE066"
+ACCENT_VIOLET = "#9F7AEA"
+BLACK = "#000000"
+DARK_GRAY = "#1A1F2E"
+LIGHT_GRAY = "#E0E0E0"
+WHITE = "#FFFFFF"
+
+# ─── CONFIG ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
     layout="wide",
-    initial_sidebar_state="collapsed"   # Collapsed par défaut sur mobile
+    initial_sidebar_state="expanded"
 )
 
-# ─── État pour dark/light ───────────────────────────────────────────────────────
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = True
-
-# ─── Fond d'écran (ajusté selon mode) ──────────────────────────────────────────
+# ─── FOND D'ÉCRAN ───────────────────────────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
-
-bg_color = "#0f172a" if st.session_state.dark_mode else "#f8fafc"
-text_color = "#ffffff" if st.session_state.dark_mode else "#0f172a"
-card_bg = "rgba(30, 41, 59, 0.85)" if st.session_state.dark_mode else "rgba(255,255,255,0.92)"
 
 st.markdown(f"""
     <style>
@@ -35,14 +39,15 @@ st.markdown(f"""
             content: "";
             position: absolute;
             inset: 0;
-            background: {bg_color};
-            opacity: 0.82;
+            background: rgba(26, 31, 46, 0.78);
             z-index: -1;
         }}
-        .main-content {{
-            color: {text_color};
-            padding: 20px 40px;
-        }}
+    </style>
+""", unsafe_allow_html=True)
+
+# ─── CSS KPI ────────────────────────────────────────────────────────────────────
+st.markdown(f"""
+    <style>
         .kpi-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -50,109 +55,48 @@ st.markdown(f"""
             margin: 60px 0;
         }}
         .kpi-hex {{
-            background: {card_bg};
+            background: rgba(30, 41, 59, 0.85);
             backdrop-filter: blur(16px);
-            border: 2px solid #6A1B9A;
+            border: 3px solid {VIOLET};
             border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
             padding: 40px 24px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             transition: all 0.4s;
         }}
         .kpi-hex:hover {{
             transform: scale(1.08);
-            border-color: #FDD100;
-            box-shadow: 0 20px 60px rgba(253, 209, 0, 0.4);
+            border-color: {YELLOW};
+            box-shadow: 0 20px 60px rgba(253, 209, 0, 0.5);
         }}
         .kpi-number {{
             font-size: 4.2rem;
             font-weight: 900;
-            color: #FFE066;
+            color: {ACCENT_YELLOW};
             margin: 16px 0;
             text-shadow: 0 0 25px rgba(255, 224, 102, 0.7);
-        }}
-        .stTabs [data-baseweb="tab-list"] {{
-            background: rgba(255,255,255,0.08);
-            backdrop-filter: blur(12px);
-            border-radius: 12px;
-            padding: 8px;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 40px;
-        }}
-        .stTabs [data-baseweb="tab"] {{
-            color: white !important;
-            font-weight: 500;
-            padding: 12px 24px !important;
-            border-radius: 50px !important;
-            transition: all 0.3s;
-        }}
-        .stTabs [data-baseweb="tab"]:hover {{
-            background: rgba(253,209,0,0.15) !important;
-            color: #FDD100 !important;
-        }}
-        .stTabs [aria-selected="true"] {{
-            background: linear-gradient(90deg, #6A1B9A, #9F7AEA) !important;
-            color: white !important;
-        }}
-        @media (max-width: 768px) {{
-            .kpi-grid {{
-                grid-template-columns: 1fr !important;
-            }}
-            .kpi-number {{
-                font-size: 3.2rem !important;
-            }}
-            .stTabs [data-baseweb="tab-list"] {{
-                flex-wrap: wrap !important;
-                justify-content: flex-start !important;
-            }}
         }}
     </style>
 """, unsafe_allow_html=True)
 
-# ─── Barre du haut ──────────────────────────────────────────────────────────────
-col1, col2, col3 = st.columns([1, 5, 1])
+# ─── Sidebar ────────────────────────────────────────────────────────────────────
+st.sidebar.title("Paris-Saclay")
+st.sidebar.image("logo_paris_saclay.png", width=220)
 
-with col1:
-    st.image("logo_paris_saclay.png", width=80)
+page = st.sidebar.radio("Thématiques", [
+    "Accueil",
+    "Population",
+    "Emploi / Chômage",
+    "Économie",
+    "Social / Ménages",
+    "Santé",
+    "Éducation",
+    "Sports",
+    "Finance (restreint)"
+])
 
-with col2:
-    st.markdown("""
-        <h1 style="margin:0; text-align:center; color:#FDD100; font-size:2.8rem;">
-            PARIS <span style="color:#fff;">●</span> SACLAY
-        </h1>
-        <p style="text-align:center; color:#ccc; margin:4px 0 0;">
-            Communauté d'agglomération
-        </p>
-    """, unsafe_allow_html=True)
-
-with col3:
-    dark_light = st.toggle("Dark / Light", value=st.session_state.dark_mode)
-    if dark_light != st.session_state.dark_mode:
-        st.session_state.dark_mode = dark_light
-        st.rerun()
-
-# ─── Navigation horizontale ─────────────────────────────────────────────────────
-themes = [
-    "Accueil 🏠",
-    "Population 👥",
-    "Emploi / Chômage 💼",
-    "Économie 📈",
-    "Social / Ménages 🏡",
-    "Santé 🩺",
-    "Éducation 🎓",
-    "Sports ⚽",
-    "Finance (restreint) 💰"
-]
-
-selected_theme = st.tabs(themes)
-
-# ─── Contenu selon onglet ───────────────────────────────────────────────────────
-current_tab = [i for i, tab in enumerate(selected_theme) if tab.active][0]
-
-# Fonction compteur animé
-def animated_counter(label, final_value, delta="", color="#FDD100", duration=2.0):
+# ─── Compteur animé ─────────────────────────────────────────────────────────────
+def animated_counter(label, final_value, delta="", color=YELLOW, duration=2.0):
     placeholder = st.empty()
     start = time.time()
     value = 0
@@ -161,69 +105,69 @@ def animated_counter(label, final_value, delta="", color="#FDD100", duration=2.0
         progress = (time.time() - start) / duration
         current = int(final_value * progress)
         placeholder.markdown(f"""
-        <div class="kpi-hex">
+        <div class="kpi-hex" style="border-color:{color};">
             <h3 style="color:{color};">{label}</h3>
             <div class="kpi-number" style="color:{color};">{current:,}</div>
-            <p style="color:#ccc;">{delta}</p>
+            <p style="color:#E0E0E0;">{delta}</p>
         </div>
         """, unsafe_allow_html=True)
         time.sleep(0.03)
     placeholder.markdown(f"""
-    <div class="kpi-hex">
+    <div class="kpi-hex" style="border-color:{color};">
         <h3 style="color:{color};">{label}</h3>
         <div class="kpi-number" style="color:{color};">{int(final_value):,}</div>
-        <p style="color:#ccc;">{delta}</p>
+        <p style="color:#E0E0E0;">{delta}</p>
     </div>
     """, unsafe_allow_html=True)
 
-# Exemple Accueil
-if current_tab == 0:
+# ─── Accueil ────────────────────────────────────────────────────────────────────
+if page == "Accueil":
+    st.title("Observatoire Territorial Paris-Saclay")
+
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-    cols = st.columns(4)
+    cols = st.columns(5)
+
     with cols[0]:
-        animated_counter("Population", 785420, "+2.8 %", YELLOW)
+        animated_counter("Population totale", 785420, "+2.8 %", YELLOW)
+
     with cols[1]:
-        animated_counter("Emplois", 142000, "+19 %", VIOLET)
+        animated_counter("Emplois tech & R&D", 142000, "+19 %", VIOLET)
+
     with cols[2]:
-        animated_counter("Startups", 1620, "14 licornes", YELLOW)
+        animated_counter("Startups actives", 1620, "14 licornes", YELLOW)
+
     with cols[3]:
-        animated_counter("Satisfaction", 86.4, "2025", VIOLET)
+        animated_counter("Satisfaction résidents", 86.4, "2025", VIOLET)
+
+    with cols[4]:
+        animated_counter("Investissements R&D", 3800000000, "cumulé", YELLOW)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Exemple Population (avec filtres)
-elif current_tab == 1:
-    st.subheader("Filtres")
-    col1, col2 = st.columns(2)
-    with col1:
-        annee = st.selectbox("Année", ["2024", "2023", "2022"])
-    with col2:
-        commune = st.selectbox("Commune", ["Toutes", "Massy", "Orsay", "Palaiseau"])
+# ─── Population ─────────────────────────────────────────────────────────────────
+elif page == "Population":
+    st.title("Population")
 
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-    cols = st.columns(4)
-    with cols[0]:
-        animated_counter("Population", 785420, f"{annee}", YELLOW)
-    with cols[1]:
-        animated_counter("Moins de 20 ans", 145000, "jeunes", VIOLET)
-    with cols[2]:
-        animated_counter("65 ans et +", 98000, "seniors", YELLOW)
-    with cols[3]:
-        animated_counter("Solde naturel", 3200, "naissances - décès", VIOLET)
-    st.markdown("</div>", unsafe_allow_html=True)
+    recensement = load_data("POP_RECENSEMENT.csv")
 
-# Autres onglets (placeholders avec 4 KPI)
-else:
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
-    cols = st.columns(4)
-    for i, col in enumerate(cols):
-        with col:
-            animated_counter(f"Indicateur {i+1}", 12345 + i*5000, "2025", YELLOW if i%2==0 else VIOLET)
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.info(f"Contenu {themes[current_tab]} en cours de développement")
+    if not recensement.empty:
+        # ... (ton code filtres et KPI Population ici)
+        # Exemple simplifié pour tester
+        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+        cols = st.columns(4)
+        with cols[0]:
+            animated_counter("Population totale", 785420, "2024", YELLOW)
+        with cols[1]:
+            animated_counter("Moins de 20 ans", 145000, "jeunes", VIOLET)
+        with cols[2]:
+            animated_counter("65 ans et plus", 98000, "seniors", YELLOW)
+        with cols[3]:
+            animated_counter("Croissance récente", 28, "+2.8 %", VIOLET)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# Footer
+# ─── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="text-align:center; color:#aaa; margin-top:80px; padding:20px;">
-    © Communauté Paris-Saclay | Données 2026 | Développé avec ❤️
+<div style="text-align:center; color:#888; margin:120px 0 40px; font-size:0.95rem;">
+    © Communauté Paris-Saclay | Données février 2026 | Déployé via Streamlit Cloud
 </div>
 """, unsafe_allow_html=True)
