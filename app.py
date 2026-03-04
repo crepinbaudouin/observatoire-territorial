@@ -1,8 +1,7 @@
-# app.py - Observatoire Territorial Paris-Saclay - Version finale améliorée
+# app.py - Observatoire Territorial Paris-Saclay - Version finale 2026
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import random
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -129,10 +128,15 @@ st.markdown(f"""
             font-weight: 800;
             color: {ACCENT_YELLOW};
             margin: 8px 0;
+            animation: countUp 2s ease-out forwards;
         }}
         .kpi-delta {{
             font-size: 1.1rem;
             color: #10b981;
+        }}
+        @keyframes countUp {{
+            from {{ opacity: 0; transform: translateY(20px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
         }}
         .modal {{
             position: fixed;
@@ -258,7 +262,7 @@ def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
     st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-title">{label}</div>
-        <div class="kpi-value" style="color:{color};">{value:,}</div>
+        <div class="kpi-value" style="color:{color};">{value}</div>
         <div class="kpi-delta">{delta}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -271,11 +275,11 @@ if current_theme == "Accueil":
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        animated_kpi("Population", 785420, "+2.8 %")
+        animated_kpi("Population", "785 420", "+2.8 %")
     with col2:
-        animated_kpi("Emplois", 142000, "+19 %")
+        animated_kpi("Emplois", "142 000", "+19 %")
     with col3:
-        animated_kpi("Startups", 1620, "14 licornes")
+        animated_kpi("Startups", "1 620", "14 licornes")
     with col4:
         animated_kpi("Satisfaction", "86.4 %", "2025")
     st.markdown("</div>", unsafe_allow_html=True)
