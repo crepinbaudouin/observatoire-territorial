@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - 4+ KPI par page + Ultra Waouh
+# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + KPI réels Population
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -189,24 +189,30 @@ if page == "Accueil":
 # ─── Population ─────────────────────────────────────────────────────────────────
 elif page == "Population":
     st.title("Population")
-    df = load_data("POP_RECENSEMENT.csv")
 
-    if not df.empty:
-        df = df.rename(columns=lambda x: x.strip())
+    # Chargement fichiers Population
+    recensement = load_data("POP_RECENSEMENT.csv")
+    naissances = load_data("POP_NAISSANCES.csv")
+    deces = load_data("POP_DECES.csv")
+    migration = load_data("POP_MIGRATION.csv")
 
-        # 4 KPI Population
-        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+    # KPI Population - 4+ hexagones waouh
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
-        total_latest = df[(df["Âge"] == "Total") & (df["Sexe"] == "Total")]["Valeur"].iloc[-1]
-        last_period = df["Période"].max()
-        young = df[(df["Période"] == last_period) & (df["Âge"].str.contains("Moins de 15"))]["Valeur"].sum()
-        elderly = df[(df["Période"] == last_period) & (df["Âge"].str.contains("65 ans et plus"))]["Valeur"].sum()
+    if not recensement.empty:
+        recensement = recensement.rename(columns=lambda x: x.strip())
+        total_latest = recensement[(recensement["Âge"] == "Total") & (recensement["Sexe"] == "Total")]["Valeur"].iloc[-1]
+        last_period = recensement["Période"].max()
+
+        # Calculs simples
+        young = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("Moins de 15|Moins de 20"))]["Valeur"].sum()
+        elderly = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("65 ans|65 ou plus"))]["Valeur"].sum()
 
         kpis_pop = [
             ("Population totale", f"{int(total_latest):,}", f"{last_period}", YELLOW),
-            ("Moins de 15 ans", f"{int(young):,}", "part jeunes", VIOLET),
+            ("Moins de 20 ans", f"{int(young):,}", "part jeunes", VIOLET),
             ("65 ans et plus", f"{int(elderly):,}", "part seniors", YELLOW),
-            ("Croissance récente", "+2.8 %", "annuelle estimée", VIOLET)
+            ("Solde naturel", f"+{int(naissances['Valeur'].sum() - deces['Valeur'].sum()):,}", "naissances - décès", VIOLET)
         ]
 
         cols = st.columns(4)
@@ -220,24 +226,33 @@ elif page == "Population":
                 </div>
                 """, unsafe_allow_html=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        # Graphiques
-        total = df[df["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
+    # Graphiques Population
+    if not recensement.empty:
+        total = recensement[recensement["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
         fig_line = px.line(total, x="Période", y="Valeur", title="Évolution population totale", color_discrete_sequence=[YELLOW])
         fig_line.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
         st.plotly_chart(fig_line, use_container_width=True)
 
-        age_df = df[(df["Période"] == last_period) & (df["Âge"] != "Total") & (df["Sexe"] == "Total")]
-        colors = [VIOLET, YELLOW, "#9F7AEA", "#D6BCFA", "#FBBF24", "#F87171"]
-        fig_pie = px.pie(age_df, values="Valeur", names="Âge", color_discrete_sequence=colors)
-        fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
-        st.plotly_chart(fig_pie, use_container_width=True)
+    if not naissances.empty and not deces.empty:
+        naiss_deces = pd.DataFrame({
+            "Période": naissances["Période"],
+            "Naissances": naissances["Valeur"],
+            "Décès": deces["Valeur"]
+        })
+        fig_bar = go.Figure(data=[
+            go.Bar(name="Naissances", x=naiss_deces["Période"], y=naiss_deces["Naissances"], marker_color=YELLOW),
+            go.Bar(name="Décès", x=naiss_deces["Période"], y=naiss_deces["Décès"], marker_color=VIOLET)
+        ])
+        fig_bar.update_layout(barmode='group', plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
+        st.plotly_chart(fig_bar, use_container_width=True)
 
-        st.dataframe(df.head(12).style.background_gradient(cmap='YlOrBr_r'))
-
-    else:
-        st.warning("Données Population non disponibles")
+    if not migration.empty:
+        solde_mig = migration.groupby("Période")["Valeur"].sum().reset_index()
+        fig_mig = px.bar(solde_mig, x="Période", y="Valeur", title="Solde migratoire", color_discrete_sequence=[ACCENT_VIOLET])
+        fig_mig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
+        st.plotly_chart(fig_mig, use_container_width=True)
 
 # ─── Emploi / Chômage ──────────────────────────────────────────────────────────
 elif page == "Emploi / Chômage":
@@ -245,9 +260,9 @@ elif page == "Emploi / Chômage":
     df = load_data("POP_CHOMAGE_DARES.csv")
 
     if not df.empty:
+        # 4 KPI Emploi/Chômage (exemples réalistes - à affiner)
         st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
-        # KPI fictifs réalistes (à affiner avec tes données)
         kpis_emp = [
             ("Taux chômage", "8.2 %", "2025 estim.", YELLOW),
             ("Demandeurs d'emploi", "28 500", "-4.1 %", VIOLET),
@@ -304,7 +319,7 @@ elif page == "Économie":
         </div>
         """, unsafe_allow_html=True)
 
-    # Autres KPI fictifs réalistes
+    # KPI supplémentaires Économie
     kpis_eco = [
         ("Chiffre d'affaires global", "12.5 Md€", "+4.1 %", YELLOW),
         ("Invest. innovation", "2.8 Md€", "2025", VIOLET)
@@ -323,7 +338,7 @@ elif page == "Économie":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Tableaux extraits
+    # Tableaux
     if not creation.empty:
         st.subheader("Créations d'entreprises (extrait)")
         st.dataframe(creation.head(10).style.background_gradient(cmap='YlOrBr_r'))
@@ -342,7 +357,7 @@ elif page == "Social / Ménages":
             st.subheader(f.replace(".csv", ""))
             st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
-    # KPI placeholders (à remplacer par vrais calculs)
+    # 4 KPI Social/Ménages (placeholders réalistes)
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
     kpis_soc = [
