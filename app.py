@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Version finale 2026
+# app.py - Observatoire Territorial Paris-Saclay - Version finale améliorée 2026
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed"  # Hamburger sur mobile
 )
 
 # ─── Toggle Dark / Light ────────────────────────────────────────────────────────
@@ -128,15 +128,10 @@ st.markdown(f"""
             font-weight: 800;
             color: {ACCENT_YELLOW};
             margin: 8px 0;
-            animation: countUp 2s ease-out forwards;
         }}
         .kpi-delta {{
             font-size: 1.1rem;
             color: #10b981;
-        }}
-        @keyframes countUp {{
-            from {{ opacity: 0; transform: translateY(20px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
         }}
         .modal {{
             position: fixed;
@@ -317,6 +312,42 @@ elif current_theme == "Population":
         st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("</div>", unsafe_allow_html=True)
+
+elif current_theme == "Économie":
+    df = load_data("ECO_ENT_CREATION.csv")
+    if not df.empty:
+        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            animated_kpi("Créations entreprises", int(df["Valeur"].sum()), "cumulé")
+        with col2:
+            animated_kpi("Établissements actifs", 27258, "2023")
+        with col3:
+            animated_kpi("Invest. innovation", "2.8 Md€", "2025")
+        with col4:
+            animated_kpi("Chiffre d'affaires", "12.5 Md€", "+4.1 %")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        fig = px.line(df.groupby("Période")["Valeur"].sum().reset_index(), x="Période", y="Valeur", title="Évolution créations entreprises")
+        st.plotly_chart(fig, use_container_width=True)
+
+elif current_theme == "Éducation":
+    df = load_data("POP_DIPLOMES.csv")
+    if not df.empty:
+        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            animated_kpi("Bac+3 et plus", 27584, "2022")
+        with col2:
+            animated_kpi("CAP / BEP", 34872, "2022")
+        with col3:
+            animated_kpi("Aucun diplôme", 14220, "15 ans+")
+        with col4:
+            animated_kpi("Taux insertion", "92 %", "estimé")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        fig = px.pie(df.head(10), values="Valeur", names="Diplôme", title="Répartition diplômes")
+        st.plotly_chart(fig, use_container_width=True)
 
 elif current_theme == "Finance":
     if "finance_open" not in st.session_state:
