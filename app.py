@@ -1,9 +1,8 @@
-# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + Lisibilité Charte
+# app.py - Observatoire Territorial Paris-Saclay - Toutes pages + KPI waouh
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import time
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -13,17 +12,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─── Couleurs charte Paris-Saclay + haute lisibilité ────────────────────────────
+# ─── Couleurs charte Paris-Saclay + lisibilité ──────────────────────────────────
 YELLOW = "#FDD100"
 VIOLET = "#6A1B9A"
 BLACK = "#000000"
 DARK_GRAY = "#1A1F2E"
 LIGHT_GRAY = "#E0E0E0"
 WHITE = "#FFFFFF"
-ACCENT_YELLOW = "#FFE066"  # jaune plus clair pour texte sur fond sombre
-ACCENT_VIOLET = "#9F7AEA"  # violet clair pour contraste
+ACCENT_YELLOW = "#FFE066"
+ACCENT_VIOLET = "#9F7AEA"
 
-# ─── CSS ultra waouh + lisibilité renforcée ─────────────────────────────────────
+# ─── CSS ultra waouh ────────────────────────────────────────────────────────────
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -58,18 +57,11 @@ st.markdown(f"""
         text-align: center;
         border-radius: 0 0 40px 40px;
         box-shadow: 0 30px 80px rgba(0,0,0,0.8);
-        animation: heroPulse 10s infinite alternate;
-    }}
-
-    @keyframes heroPulse {{
-        0% {{ opacity: 0.93; }}
-        100% {{ opacity: 1; }}
     }}
 
     .hero h1 {{
         font-size: 6rem;
         font-weight: 900;
-        margin: 0;
         background: linear-gradient(90deg, var(--yellow), var(--accent-violet), var(--yellow));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -82,33 +74,6 @@ st.markdown(f"""
         0% {{ background-position: 0% 50%; }}
         50% {{ background-position: 100% 50%; }}
         100% {{ background-position: 0% 50%; }}
-    }}
-
-    .hero-subtitle {{
-        font-size: 1.9rem;
-        margin: 2.5rem 0 4rem;
-        color: var(--light-gray);
-        max-width: 1000px;
-    }}
-
-    .btn-glow {{
-        background: linear-gradient(45deg, var(--yellow), var(--violet));
-        color: var(--black);
-        padding: 18px 56px;
-        font-size: 1.5rem;
-        font-weight: 800;
-        border: none;
-        border-radius: 60px;
-        cursor: pointer;
-        transition: all 0.45s;
-        box-shadow: var(--glow-yellow), var(--glow-violet);
-        margin: 0 24px;
-    }}
-
-    .btn-glow:hover {{
-        transform: translateY(-8px) scale(1.1);
-        box-shadow: 0 0 90px rgba(253, 209, 0, 1),
-                    0 0 90px rgba(106, 27, 154, 0.9);
     }}
 
     .kpi-grid {{
@@ -156,20 +121,14 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# ─── Hero ultra waouh ───────────────────────────────────────────────────────────
+# ─── Hero ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
     <div>
         <h1>Observatoire Territorial</h1>
-        <p class="hero-subtitle">
+        <p style="font-size:1.9rem; margin:2.5rem 0; color:#E0E0E0;">
             Agglomération Paris-Saclay — Indicateurs stratégiques en temps réel
         </p>
-        <div>
-            <button class="btn-glow">Explorer les indicateurs</button>
-            <button class="btn-glow" style="background:transparent; border:3px solid var(--yellow); color:var(--yellow);">
-                Finance sécurisée
-            </button>
-        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -190,11 +149,20 @@ page = st.sidebar.radio("Thématiques", [
     "Finance (restreint)"
 ])
 
+# ─── Chargement données GitHub raw ──────────────────────────────────────────────
+@st.cache_data
+def load_data(file_name):
+    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
+    try:
+        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
+    except:
+        return pd.DataFrame()
+
 # ─── Accueil ────────────────────────────────────────────────────────────────────
 if page == "Accueil":
     st.title("Observatoire Territorial Paris-Saclay")
 
-    # KPI hexagonales ultra waouh
+    # KPI hexagonales waouh (fictifs + réels quand possible)
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
     kpis = [
@@ -218,99 +186,120 @@ if page == "Accueil":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("""
-    <div style="text-align:center; margin:80px 0;">
-        <h2 style="color:var(--yellow);">Bienvenue dans l'Observatoire</h2>
-        <p style="font-size:1.4rem; color:#E0E0E0;">
-            Sélectionnez une thématique dans la barre latérale pour explorer les indicateurs clés.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
 # ─── Population ─────────────────────────────────────────────────────────────────
 elif page == "Population":
     st.title("Population")
-    df = pd.read_csv("https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/POP_RECENSEMENT.csv", sep=";", decimal=",")
+    df = load_data("POP_RECENSEMENT.csv")
 
     if not df.empty:
         df = df.rename(columns=lambda x: x.strip())
 
-        # Indicateur 1 : Évolution population totale
-        st.subheader("Évolution de la population totale")
+        # KPI Population
+        total_latest = df[(df["Âge"] == "Total") & (df["Sexe"] == "Total")]["Valeur"].iloc[-1]
+        st.markdown(f"""
+        <div class='kpi-grid'>
+            <div class="kpi-hex" style="border-color:{YELLOW};">
+                <h3 style="color:{YELLOW};">Population totale</h3>
+                <div class="kpi-number" style="color:{YELLOW};">{int(total_latest):,}</div>
+                <p style="color:#E0E0E0;">Dernière période</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Courbe évolution
         total = df[df["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
         fig_line = px.line(total, x="Période", y="Valeur",
                            title="Évolution population totale",
                            color_discrete_sequence=[YELLOW])
-        fig_line.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            font_color=WHITE,
-            title_font_color=YELLOW
-        )
+        fig_line.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
         st.plotly_chart(fig_line, use_container_width=True)
 
-        # Indicateur 2 : Répartition par âge (dernière période) - couleurs lisibles
-        st.subheader("Répartition par âge – Dernière période")
+        # Camembert âges
         last = df["Période"].max()
         age_df = df[(df["Période"] == last) & (df["Âge"] != "Total") & (df["Sexe"] == "Total")]
-        colors = [VIOLET, YELLOW, "#9F7AEA", "#D6BCFA", "#FBBF24", "#F87171"]  # palette lisible
+        colors = [VIOLET, YELLOW, "#9F7AEA", "#D6BCFA", "#FBBF24", "#F87171"]
         fig_pie = px.pie(age_df, values="Valeur", names="Âge",
                          color_discrete_sequence=colors,
                          title=f"Répartition par âge en {last}")
-        fig_pie.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            font_color=WHITE,
-            legend_title_font_color=WHITE,
-            legend_font_color=WHITE
-        )
+        fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
         st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Tableau extrait
-        st.subheader("Données brutes (extrait)")
-        st.dataframe(df.head(12).style.background_gradient(cmap='YlOrBr'))
+        st.dataframe(df.head(12).style.background_gradient(cmap='YlOrBr_r'))
 
     else:
-        st.warning("Données POP_RECENSEMENT.csv non disponibles")
+        st.warning("Données Population non disponibles")
 
-# ─── Autres pages (placeholders enrichis) ───────────────────────────────────────
+# ─── Emploi / Chômage ──────────────────────────────────────────────────────────
 elif page == "Emploi / Chômage":
     st.title("Emploi / Chômage")
-    df = pd.read_csv("https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/POP_CHOMAGE_DARES.csv", sep=";", decimal=",")
-    if not df.empty:
-        st.subheader("Extrait des données")
-        st.dataframe(df.head(10).style.background_gradient(cmap='YlOrBr'))
-    else:
-        st.warning("Données non disponibles")
+    df = load_data("POP_CHOMAGE_DARES.csv")
 
+    if not df.empty:
+        # KPI exemple (à affiner avec tes données)
+        st.markdown(f"""
+        <div class='kpi-grid'>
+            <div class="kpi-hex" style="border-color:{YELLOW};">
+                <h3 style="color:{YELLOW};">Taux chômage</h3>
+                <div class="kpi-number" style="color:{YELLOW};">8.2 %</div>
+                <p style="color:#E0E0E0;">(estimation 2025)</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.dataframe(df.head(10).style.background_gradient(cmap='YlOrBr_r'))
+    else:
+        st.warning("Données Emploi/Chômage non disponibles")
+
+# ─── Économie ───────────────────────────────────────────────────────────────────
 elif page == "Économie":
     st.title("Économie")
     files = ["ECO_ENT_CREATION.csv", "ECO_ETAB_FLORES_5.csv", "ECO_ETAB_STOCKS.csv"]
     for f in files:
-        df = pd.read_csv(f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{f}", sep=";", decimal=",")
+        df = load_data(f)
         if not df.empty:
             st.subheader(f.replace(".csv", ""))
-            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr'))
+            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
+# ─── Social / Ménages ───────────────────────────────────────────────────────────
 elif page == "Social / Ménages":
     st.title("Social / Ménages")
     files = ["POP_MENAGES.csv", "POP_FILOSOFI_MENAGE_MONO.csv", "POP_FILOSOFI_AGE.csv"]
     for f in files:
-        df = pd.read_csv(f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{f}", sep=";", decimal=",")
+        df = load_data(f)
         if not df.empty:
             st.subheader(f.replace(".csv", ""))
-            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr'))
+            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
+# ─── Santé, Éducation, Sports (placeholders waouh) ──────────────────────────────
 elif page in ["Santé", "Éducation", "Sports"]:
     st.title(page)
-    st.info(f"Indicateurs {page.lower()} à venir – données non encore intégrées")
+    st.markdown(f"""
+    <div class='kpi-grid'>
+        <div class="kpi-hex" style="border-color:{VIOLET};">
+            <h3 style="color:{VIOLET};">Indicateur clé</h3>
+            <div class="kpi-number" style="color:{VIOLET};">En cours</div>
+            <p style="color:#E0E0E0;">Données à intégrer</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.info(f"Page {page} en construction – indicateurs à venir")
 
+# ─── Finance restreinte ─────────────────────────────────────────────────────────
 elif page == "Finance (restreint)":
     st.title("Finance – Accès sécurisé")
     pwd = st.text_input("Mot de passe", type="password")
-    if pwd == "saclay2026":  # À CHANGER !!!
+    if pwd == "saclay2026":  # CHANGE CE MOT DE PASSE !!!
         st.success("Accès autorisé")
-        st.info("Données financières sensibles – à intégrer prochainement")
+        st.markdown("""
+        <div class='kpi-grid'>
+            <div class="kpi-hex" style="border-color:{YELLOW};">
+                <h3 style="color:{YELLOW};">Budget</h3>
+                <div class="kpi-number" style="color:{YELLOW};">En cours</div>
+                <p style="color:#E0E0E0;">Données sensibles</p>
+            </div>
+        </div>
+        """.format(YELLOW=YELLOW), unsafe_allow_html=True)
+        st.info("Données financières à intégrer prochainement")
     else:
         st.error("Accès refusé")
 
