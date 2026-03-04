@@ -1,10 +1,7 @@
-# app.py
+# app.py - Version racine - logo à la racine du repo
 import streamlit as st
-from streamlit_lottie import st_lottie
-import requests
-from pathlib import Path
-import base64
 import pandas as pd
+import plotly.express as px
 
 # ─── Config page ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -14,18 +11,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─── Dark mode + custom CSS (glassmorphism + glow + animations) ────────────────
+# ─── CSS waouh (glassmorphism + glow + animations) ──────────────────────────────
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
     :root {
         --bg: #0f172a;
-        --bg-card: rgba(30, 41, 59, 0.6);
+        --bg-card: rgba(30, 41, 59, 0.65);
         --text: #e2e8f0;
         --accent: #3b82f6;
         --accent-dark: #2563eb;
-        --glow: 0 0 30px rgba(59, 130, 246, 0.5);
+        --glow: 0 0 30px rgba(59, 130, 246, 0.6);
     }
 
     body, .stApp {
@@ -36,8 +33,8 @@ st.markdown("""
 
     .hero {
         position: relative;
-        height: 85vh;
-        background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)),
+        height: 80vh;
+        background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.9)),
                     url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=90');
         background-size: cover;
         background-position: center;
@@ -51,108 +48,131 @@ st.markdown("""
     }
 
     .hero h1 {
-        font-size: 4.8rem;
-        font-weight: 800;
+        font-size: 5rem;
+        font-weight: 900;
         margin: 0;
-        text-shadow: 0 4px 20px rgba(0,0,0,0.6);
-        background: linear-gradient(90deg, #60a5fa, #a5b4fc);
+        text-shadow: 0 6px 25px rgba(0,0,0,0.7);
+        background: linear-gradient(90deg, #60a5fa, #a5b4fc, #c084fc);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: titleGlow 4s ease-in-out infinite alternate;
+        animation: glow 5s ease-in-out infinite alternate;
     }
 
-    @keyframes titleGlow {
-        0% { text-shadow: 0 0 20px rgba(96, 165, 250, 0.6); }
-        100% { text-shadow: 0 0 50px rgba(165, 180, 252, 0.9); }
+    @keyframes glow {
+        0% { text-shadow: 0 0 20px rgba(96, 165, 250, 0.7); }
+        100% { text-shadow: 0 0 60px rgba(165, 180, 252, 1); }
     }
 
     .hero-subtitle {
-        font-size: 1.6rem;
-        margin: 1.5rem 0 2.5rem;
-        opacity: 0.9;
-        max-width: 800px;
+        font-size: 1.8rem;
+        margin: 2rem 0 3rem;
+        max-width: 900px;
+        opacity: 0.95;
     }
 
     .btn-glow {
         background: var(--accent);
         color: white;
-        padding: 16px 40px;
-        font-size: 1.3rem;
-        font-weight: 600;
+        padding: 18px 48px;
+        font-size: 1.4rem;
+        font-weight: 700;
         border: none;
-        border-radius: 50px;
+        border-radius: 60px;
         cursor: pointer;
-        transition: all 0.35s;
+        transition: all 0.4s;
         box-shadow: var(--glow);
-        margin: 0 12px;
+        margin: 0 16px;
     }
 
     .btn-glow:hover {
-        transform: translateY(-4px) scale(1.05);
-        box-shadow: 0 0 60px rgba(59, 130, 246, 0.8);
+        transform: translateY(-6px) scale(1.08);
+        box-shadow: 0 0 80px rgba(59, 130, 246, 0.9);
         background: var(--accent-dark);
     }
 
     .kpi-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 28px;
-        margin: 60px 0;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 32px;
+        margin: 70px 0;
     }
 
     .kpi-card {
         background: var(--bg-card);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 24px;
-        padding: 32px 24px;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 28px;
+        padding: 36px 28px;
         text-align: center;
-        transition: all 0.4s;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        transition: all 0.5s;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.5);
     }
 
     .kpi-card:hover {
-        transform: translateY(-12px);
-        box-shadow: 0 30px 80px rgba(59, 130, 246, 0.3);
+        transform: translateY(-16px);
+        box-shadow: 0 40px 100px rgba(59, 130, 246, 0.4);
     }
 
     .kpi-number {
-        font-size: 3.8rem;
-        font-weight: 800;
+        font-size: 4.2rem;
+        font-weight: 900;
         color: #60a5fa;
-        margin: 12px 0;
+        margin: 16px 0;
     }
 
     .sidebar .sidebar-content {
-        background: rgba(15, 23, 42, 0.9) !important;
-        backdrop-filter: blur(12px) !important;
+        background: rgba(15, 23, 42, 0.95) !important;
+        backdrop-filter: blur(16px) !important;
+        border-right: 1px solid rgba(255,255,255,0.08);
     }
 
     footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# ─── Hero banner (image statique pour démarrer – vidéo plus bas si besoin) ────────
-with st.container():
-    st.markdown("""
-    <div class="hero">
+# ─── Hero banner ────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="hero">
+    <div>
+        <h1>Observatoire Territorial</h1>
+        <p class="hero-subtitle">
+            Suivi en temps réel – Indicateurs stratégiques – Agglomération Paris-Saclay
+        </p>
         <div>
-            <h1>Observatoire Territorial</h1>
-            <p class="hero-subtitle">
-                Suivi en temps réel des indicateurs clés de l’agglomération Paris-Saclay<br>
-                Données fiables · Analyses avancées · Décision stratégique
-            </p>
-            <div>
-                <button class="btn-glow">Explorer les indicateurs</button>
-                <button class="btn-glow" style="background:transparent; border:2px solid #64748b;">
-                    Accès Finance (restreint)
-                </button>
-            </div>
+            <button class="btn-glow">Découvrir les données</button>
+            <button class="btn-glow" style="background:transparent; border:2px solid #64748b;">
+                Finance (accès sécurisé)
+            </button>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
-# ─── KPI cards (exemples fictifs – à brancher sur tes CSV plus tard) ─────────────
+# ─── Sidebar avec logo à la racine ──────────────────────────────────────────────
+try:
+    st.sidebar.image("logo_paris_saclay.png", width=180)
+except:
+    st.sidebar.image("https://via.placeholder.com/180x180/0f172a/60a5fa?text=Paris-Saclay", width=180)
+    st.sidebar.warning("Logo non trouvé – chemin racine attendu")
+
+st.sidebar.title("Observatoire Paris-Saclay")
+
+# Menu simple (plus tard multi-page)
+themes = [
+    "Accueil",
+    "Population",
+    "Emploi / Chômage",
+    "Économie",
+    "Social / Ménages",
+    "Santé",
+    "Éducation",
+    "Sports",
+    "Finance (restreint)"
+]
+
+choice = st.sidebar.radio("Navigation", themes, index=0)
+
+# ─── KPI cards waouh ────────────────────────────────────────────────────────────
 st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
 cols = st.columns(4)
@@ -168,7 +188,7 @@ with cols[0]:
 with cols[1]:
     st.markdown("""
     <div class="kpi-card">
-        <h3>Emplois tech & R&D</h3>
+        <h3>Emplois tech</h3>
         <div class="kpi-number">142 000</div>
         <p style="color:#94a3b8;">(+19 % en 5 ans)</p>
     </div>
@@ -186,39 +206,34 @@ with cols[2]:
 with cols[3]:
     st.markdown("""
     <div class="kpi-card">
-        <h3>Satisfaction résidents</h3>
+        <h3>Satisfaction</h3>
         <div class="kpi-number">86,4 %</div>
-        <p style="color:#94a3b8;">(enquête 2025)</p>
+        <p style="color:#94a3b8;">résidents (2025)</p>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ─── Sidebar (thèmes) ───────────────────────────────────────────────────────────
-st.sidebar.title("Observatoire Paris-Saclay")
-st.sidebar.image("assets/images/logo_paris_saclay.png", width=180)
+# ─── Contenu selon choix sidebar ────────────────────────────────────────────────
+if choice == "Accueil":
+    st.markdown("""
+    <div style="text-align:center; margin:60px 0;">
+        <h2>Bienvenue dans l'Observatoire</h2>
+        <p style="font-size:1.3rem; color:#cbd5e1;">
+            Sélectionnez une thématique dans la barre latérale pour explorer les indicateurs.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-themes = [
-    "Accueil",
-    "Population",
-    "Emploi / Chômage",
-    "Économie",
-    "Social / Ménages",
-    "Santé",
-    "Éducation",
-    "Sports",
-    "Finance (restreint)"
-]
+elif choice == "Population":
+    st.title("Population")
+    st.info("Page en construction – Chargement des données recensement à venir...")
 
-choice = st.sidebar.radio("Navigation", themes, index=0)
+# Ajoute les autres choix de la même façon quand tu veux
 
-if choice != "Accueil":
-    st.title(choice)
-    st.info(f"Page {choice} en construction – indicateurs à venir")
-
-# ─── Footer ─────────────────────────────────────────────────────────────────────
+# Footer
 st.markdown("""
-<div style="text-align:center; color:#64748b; margin:80px 0 40px;">
-    © Communauté Paris-Saclay | Données actualisées février 2026
+<div style="text-align:center; color:#64748b; margin:100px 0 40px;">
+    © Communauté Paris-Saclay | Données février 2026
 </div>
 """, unsafe_allow_html=True)
