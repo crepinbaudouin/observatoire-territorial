@@ -198,7 +198,7 @@ elif page == "Population":
     if not recensement.empty:
         recensement = recensement.rename(columns=lambda x: x.strip())
 
-        # 4 KPI Population réels
+        # 5 KPI Population réels
         st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
         total_latest = recensement[(recensement["Âge"] == "Total") & (recensement["Sexe"] == "Total")]["Valeur"].iloc[-1]
@@ -206,15 +206,17 @@ elif page == "Population":
         young = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("Moins de 15|Moins de 20", na=False))]["Valeur"].sum()
         elderly = recensement[(recensement["Période"] == last_period) & (recensement["Âge"].str.contains("65 ans|65 ou plus", na=False))]["Valeur"].sum()
         solde_naturel = naissances["Valeur"].sum() - deces["Valeur"].sum() if not naissances.empty and not deces.empty else 0
+        solde_mig = migration["Valeur"].sum() if not migration.empty else "N/A"
 
         kpis_pop = [
             ("Population totale", f"{int(total_latest):,}", f"{last_period}", YELLOW),
             ("Moins de 20 ans", f"{int(young):,}", "jeunes", VIOLET),
             ("65 ans et plus", f"{int(elderly):,}", "seniors", YELLOW),
-            ("Solde naturel", f"{int(solde_naturel):+,}", "naissances - décès", VIOLET)
+            ("Solde naturel", f"{int(solde_naturel):+,}", "naissances - décès", VIOLET),
+            ("Solde migratoire", f"{solde_mig}", "cumulé", YELLOW)
         ]
 
-        cols = st.columns(4)
+        cols = st.columns(5)
         for col, (label, value, delta, color) in zip(cols, kpis_pop):
             with col:
                 st.markdown(f"""
@@ -247,11 +249,15 @@ elif page == "Population":
 # ─── Emploi / Chômage ──────────────────────────────────────────────────────────
 elif page == "Emploi / Chômage":
     st.title("Emploi / Chômage")
-    df = load_data("POP_CHOMAGE_DARES.csv")
+
+    chomage = load_data("POP_CHOMAGE_DARES.csv")
     actif_pcs = load_data("POP_ACTIF_PCS.csv")
+    actif_secteur = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
+    actif_inactif = load_data("POP_ACTIF_INACTIF_DIPLOME.csv")
 
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
+    # 4 KPI Emploi/Chômage réels ou estimés
     kpis_emp = [
         ("Taux chômage estimé", "8.2 %", "2025", YELLOW),
         ("Demandeurs d'emploi", "28 500", "-4.1 %", VIOLET),
@@ -272,11 +278,17 @@ elif page == "Emploi / Chômage":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if not df.empty:
-        st.dataframe(df.head(10).style.background_gradient(cmap='YlOrBr_r'))
+    if not chomage.empty:
+        st.subheader("Chômage DARES (extrait)")
+        st.dataframe(chomage.head(10).style.background_gradient(cmap='YlOrBr_r'))
+
     if not actif_pcs.empty:
         st.subheader("Actifs par PCS (extrait)")
         st.dataframe(actif_pcs.head(8).style.background_gradient(cmap='YlOrBr_r'))
+
+    if not actif_secteur.empty:
+        st.subheader("Actifs occupés par secteur (extrait)")
+        st.dataframe(actif_secteur.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
 # ─── Économie ───────────────────────────────────────────────────────────────────
 elif page == "Économie":
@@ -288,6 +300,7 @@ elif page == "Économie":
 
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
+    # KPI Économie réels
     if not creation.empty:
         last_year = creation["Période"].max()
         nb_creations = creation[creation["Période"] == last_year]["Valeur"].sum()
@@ -342,6 +355,8 @@ elif page == "Social / Ménages":
     menages = load_data("POP_MENAGES.csv")
     monopar = load_data("POP_FILOSOFI_MENAGE_MONO.csv")
     age_filo = load_data("POP_FILOSOFI_AGE.csv")
+    tension = load_data("LOGEMENT_TENSION.csv")
+    carac = load_data("LOGEMENT_CARAC.csv")
 
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
@@ -378,6 +393,10 @@ elif page == "Social / Ménages":
     if not menages.empty:
         st.subheader("Ménages (extrait)")
         st.dataframe(menages.head(8).style.background_gradient(cmap='YlOrBr_r'))
+
+    if not tension.empty:
+        st.subheader("Tension logement (extrait)")
+        st.dataframe(tension.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
 # ─── Santé, Éducation, Sports ───────────────────────────────────────────────────
 elif page in ["Santé", "Éducation", "Sports"]:
