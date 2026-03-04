@@ -1,43 +1,36 @@
-# app.py - Observatoire Territorial Paris-Saclay - Style Taipy / Glassmorphism 2026
+# app.py - Observatoire Territorial Paris-Saclay - Version améliorée 2025
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import time
-import random  # pour simuler des données dynamiques
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed"  # Collapsed sur mobile
 )
 
 # ─── Toggle Dark / Light ────────────────────────────────────────────────────────
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
-dark_light = st.toggle("Dark / Light", value=st.session_state.dark_mode, key="dark_toggle")
-if dark_light != st.session_state.dark_mode:
-    st.session_state.dark_mode = dark_light
-    st.rerun()
+# ─── Couleurs (définies en haut pour éviter NameError) ─────────────────────────
+YELLOW = "#FDD100"
+VIOLET = "#6A1B9A"
+ACCENT_YELLOW = "#FFE066"
+ACCENT_VIOLET = "#9F7AEA"
+BG_DARK = "#0f172a"
+BG_LIGHT = "#f8fafc"
+CARD_DARK = "rgba(30, 41, 59, 0.88)"
+CARD_LIGHT = "rgba(255, 255, 255, 0.92)"
 
-# ─── Thèmes couleurs ────────────────────────────────────────────────────────────
-if st.session_state.dark_mode:
-    BG = "#0f172a"
-    CARD_BG = "rgba(30, 41, 59, 0.88)"
-    TEXT = "#e2e8f0"
-    ACCENT = "#FDD100"
-    SECONDARY = "#9F7AEA"
-    BORDER = "#6A1B9A"
-else:
-    BG = "#f8fafc"
-    CARD_BG = "rgba(255, 255, 255, 0.92)"
-    TEXT = "#0f172a"
-    ACCENT = "#F59E0B"
-    SECONDARY = "#7C3AED"
-    BORDER = "#6D28D9"
+bg_color = BG_DARK if st.session_state.dark_mode else BG_LIGHT
+card_bg = CARD_DARK if st.session_state.dark_mode else CARD_LIGHT
+text_color = "#ffffff" if st.session_state.dark_mode else "#0f172a"
 
-# ─── Fond + style glassmorphism ─────────────────────────────────────────────────
+# ─── Fond + style global ────────────────────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
 
 st.markdown(f"""
@@ -47,13 +40,12 @@ st.markdown(f"""
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            color: {TEXT};
         }}
         .stApp::before {{
             content: "";
             position: absolute;
             inset: 0;
-            background: {BG};
+            background: {bg_color};
             opacity: 0.82;
             z-index: -1;
         }}
@@ -72,18 +64,18 @@ st.markdown(f"""
         .logo-title h1 {{
             margin: 0;
             font-size: 2.4rem;
-            background: linear-gradient(90deg, {ACCENT}, {SECONDARY});
+            background: linear-gradient(90deg, {YELLOW}, {ACCENT_VIOLET});
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }}
-        .tabs-container {{
+        .nav-tabs {{
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
             margin: 24px 0 40px;
         }}
-        .tab-btn {{
+        .nav-tab {{
             background: rgba(255,255,255,0.08);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255,255,255,0.15);
@@ -97,12 +89,12 @@ st.markdown(f"""
             align-items: center;
             gap: 10px;
         }}
-        .tab-btn:hover {{
+        .nav-tab:hover {{
             background: rgba(253,209,0,0.15);
             transform: translateY(-2px);
         }}
-        .tab-btn.active {{
-            background: linear-gradient(45deg, {VIOLET}, {SECONDARY});
+        .nav-tab.active {{
+            background: linear-gradient(45deg, {VIOLET}, {ACCENT_VIOLET});
             box-shadow: 0 8px 25px rgba(106,27,154,0.4);
         }}
         .kpi-container {{
@@ -112,12 +104,11 @@ st.markdown(f"""
             margin: 40px 0;
         }}
         .kpi-card {{
-            background: {CARD_BG};
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 20px;
+            background: {card_bg};
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
             padding: 28px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
             transition: transform 0.3s;
         }}
         .kpi-card:hover {{
@@ -131,21 +122,40 @@ st.markdown(f"""
         .kpi-value {{
             font-size: 3.2rem;
             font-weight: 800;
-            color: {ACCENT};
+            color: {ACCENT_YELLOW};
             margin: 8px 0;
         }}
         .kpi-delta {{
             font-size: 1.1rem;
             color: #10b981;
         }}
-        .login-card {{
-            background: {CARD_BG};
+        .modal {{
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.4s;
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; }}
+            to {{ opacity: 1; }}
+        }}
+        .modal-content {{
+            background: {card_bg};
             backdrop-filter: blur(20px);
             border-radius: 24px;
             padding: 40px;
             max-width: 420px;
-            margin: 60px auto;
+            width: 90%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: slideUp 0.5s;
+        }}
+        @keyframes slideUp {{
+            from {{ transform: translateY(60px); opacity: 0; }}
+            to {{ transform: translateY(0); opacity: 1; }}
         }}
         .login-input {{
             width: 100%;
@@ -159,7 +169,7 @@ st.markdown(f"""
         .login-btn {{
             width: 100%;
             padding: 16px;
-            background: linear-gradient(45deg, {VIOLET}, {SECONDARY});
+            background: linear-gradient(45deg, {VIOLET}, {ACCENT_VIOLET});
             color: white;
             border: none;
             border-radius: 12px;
@@ -174,13 +184,14 @@ st.markdown(f"""
             .kpi-value {{
                 font-size: 2.8rem;
             }}
-            .tabs-container {{
+            .nav-tabs {{
                 flex-direction: column;
                 align-items: center;
             }}
             .header {{
                 flex-direction: column;
                 gap: 15px;
+                padding: 15px 20px;
             }}
         }}
     </style>
@@ -218,7 +229,7 @@ themes = [
     ("Finance", "💰")
 ]
 
-st.markdown("<div class='tabs-container'>", unsafe_allow_html=True)
+st.markdown("<div class='nav-tabs'>", unsafe_allow_html=True)
 selected_tab = st.radio(
     "Navigation",
     [f"{icon} {name}" for name, icon in themes],
@@ -229,7 +240,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 current_theme = selected_tab.split(" ", 1)[1]
 
-# ─── Compteur animé ─────────────────────────────────────────────────────────────
+# ─── Compteur animé simple (sans boucle while pour éviter blocage) ──────────────
 def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
     st.markdown(f"""
     <div class="kpi-card">
@@ -239,12 +250,21 @@ def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
     </div>
     """, unsafe_allow_html=True)
 
+# ─── Chargement CSV (exemples) ──────────────────────────────────────────────────
+@st.cache_data
+def load_data(file_name):
+    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
+    try:
+        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
+    except:
+        return pd.DataFrame()
+
 # ─── Contenu par page ───────────────────────────────────────────────────────────
 st.markdown("<div class='main'>", unsafe_allow_html=True)
 
 if current_theme == "Accueil":
     st.markdown("<h1 style='text-align:center; margin-bottom:40px;'>Bienvenue sur l'Observatoire</h1>")
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+    st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         animated_kpi("Population", 785420, "+2.8 %")
@@ -256,25 +276,75 @@ if current_theme == "Accueil":
         animated_kpi("Satisfaction", "86.4 %", "2025")
     st.markdown("</div>", unsafe_allow_html=True)
 
+elif current_theme == "Population":
+    df = load_data("POP_RECENSEMENT.csv")
+    if not df.empty:
+        df = df.rename(columns=lambda x: x.strip())
+        st.subheader("Filtres")
+        col1, col2 = st.columns(2)
+        with col1:
+            annees = sorted(df["Période"].unique())
+            annee = st.selectbox("Année", annees, index=len(annees)-1)
+        with col2:
+            communes = ["Toutes"] + sorted(df["Géographie"].unique().tolist())
+            commune = st.selectbox("Commune", communes)
+
+        df_filtre = df[df["Période"] == annee]
+        if commune != "Toutes":
+            df_filtre = df_filtre[df_filtre["Géographie"] == commune]
+
+        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            animated_kpi("Population totale", int(df_filtre["Valeur"].sum()), f"{annee}")
+        with col2:
+            animated_kpi("Moins de 20 ans", 145000, "jeunes")
+        with col3:
+            animated_kpi("65 ans et plus", 98000, "seniors")
+        with col4:
+            animated_kpi("Croissance", "2.8 %", "annuelle")
+
+        # Graphique Plotly exemple
+        fig = px.bar(df_filtre.head(10), x="Géographie", y="Valeur", title="Population par commune")
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
 elif current_theme == "Finance":
-    st.markdown("<div class='login-card'>", unsafe_allow_html=True)
-    st.markdown("<h2 style='color:#FDD100; text-align:center;'>Finance</h2>")
-    st.text_input("Identifiant")
-    st.text_input("Mot de passe", type="password")
-    if st.button("Se connecter", type="primary", use_container_width=True):
-        st.success("Connexion simulée réussie")
-    st.markdown("<p style='text-align:center; margin-top:20px; color:#94a3b8;'>Mot de passe oublié ?</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    if "finance_open" not in st.session_state:
+        st.session_state.finance_open = False
+
+    if st.button("Accéder à Finance", type="primary"):
+        st.session_state.finance_open = True
+
+    if st.session_state.finance_open:
+        st.markdown("""
+        <div class="modal">
+            <div class="modal-content">
+                <h2 style="color:#FDD100; text-align:center;">Finance</h2>
+                <input class="login-input" placeholder="Identifiant">
+                <input class="login-input" type="password" placeholder="Mot de passe">
+                <button class="login-btn">Se connecter</button>
+                <p style="text-align:center; margin-top:20px; color:#94a3b8;">
+                    <a href="#" style="color:#FDD100;">Mot de passe oublié ?</a>
+                </p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("Fermer"):
+            st.session_state.finance_open = False
+            st.rerun()
 
 else:
     st.markdown(f"<h2 style='text-align:center;'>{current_theme}</h2>", unsafe_allow_html=True)
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+    st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     cols = st.columns(4)
     for i, col in enumerate(cols):
         with col:
             animated_kpi(f"Indicateur {i+1}", random.randint(1000, 50000), "+X %")
     st.markdown("</div>", unsafe_allow_html=True)
-    st.info(f"Contenu détaillé {current_theme} en cours de développement")
+    st.info(f"Contenu {current_theme} en cours de développement")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
