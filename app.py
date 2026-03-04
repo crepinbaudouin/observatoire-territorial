@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Toutes pages + KPI waouh
+# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + KPI réels Économie
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─── Couleurs charte Paris-Saclay + lisibilité ──────────────────────────────────
+# ─── Charte Paris-Saclay + lisibilité max ───────────────────────────────────────
 YELLOW = "#FDD100"
 VIOLET = "#6A1B9A"
 BLACK = "#000000"
@@ -253,12 +253,47 @@ elif page == "Emploi / Chômage":
 # ─── Économie ───────────────────────────────────────────────────────────────────
 elif page == "Économie":
     st.title("Économie")
-    files = ["ECO_ENT_CREATION.csv", "ECO_ETAB_FLORES_5.csv", "ECO_ETAB_STOCKS.csv"]
-    for f in files:
-        df = load_data(f)
-        if not df.empty:
-            st.subheader(f.replace(".csv", ""))
-            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr_r'))
+
+    # Chargement des 3 fichiers
+    creation = load_data("ECO_ENT_CREATION.csv")
+    flores = load_data("ECO_ETAB_FLORES_5.csv")
+    stocks = load_data("ECO_ETAB_STOCKS.csv")
+
+    # KPI Économie - créations récentes
+    if not creation.empty:
+        last_year = creation["Période"].max()
+        nb_creations = creation[creation["Période"] == last_year]["Valeur"].sum()
+        st.markdown(f"""
+        <div class='kpi-grid'>
+            <div class="kpi-hex" style="border-color:{YELLOW};">
+                <h3 style="color:{YELLOW};">Créations d'entreprises</h3>
+                <div class="kpi-number" style="color:{YELLOW};">{int(nb_creations):,}</div>
+                <p style="color:#E0E0E0;">en {last_year}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Stocks d'établissements
+    if not stocks.empty:
+        total_stocks = stocks[stocks["Activité économique"] == "Total"]["Valeur"].iloc[-1]
+        st.markdown(f"""
+        <div class='kpi-grid'>
+            <div class="kpi-hex" style="border-color:{VIOLET};">
+                <h3 style="color:{VIOLET};">Établissements actifs</h3>
+                <div class="kpi-number" style="color:{VIOLET};">{int(total_stocks):,}</div>
+                <p style="color:#E0E0E0;">Dernière période</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Tableau extraits
+    if not creation.empty:
+        st.subheader("Créations d'entreprises (extrait)")
+        st.dataframe(creation.head(10).style.background_gradient(cmap='YlOrBr_r'))
+
+    if not stocks.empty:
+        st.subheader("Stocks d'établissements (extrait)")
+        st.dataframe(stocks.head(10).style.background_gradient(cmap='YlOrBr_r'))
 
 # ─── Social / Ménages ───────────────────────────────────────────────────────────
 elif page == "Social / Ménages":
@@ -270,7 +305,7 @@ elif page == "Social / Ménages":
             st.subheader(f.replace(".csv", ""))
             st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
-# ─── Santé, Éducation, Sports (placeholders waouh) ──────────────────────────────
+# ─── Santé, Éducation, Sports ───────────────────────────────────────────────────
 elif page in ["Santé", "Éducation", "Sports"]:
     st.title(page)
     st.markdown(f"""
@@ -288,7 +323,7 @@ elif page in ["Santé", "Éducation", "Sports"]:
 elif page == "Finance (restreint)":
     st.title("Finance – Accès sécurisé")
     pwd = st.text_input("Mot de passe", type="password")
-    if pwd == "saclay2026":  # CHANGE CE MOT DE PASSE !!!
+    if pwd == "saclay2026":  # À CHANGER !!!
         st.success("Accès autorisé")
         st.markdown("""
         <div class='kpi-grid'>
