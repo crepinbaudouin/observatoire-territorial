@@ -1,22 +1,27 @@
-# app.py - Observatoire Territorial Paris-Saclay - Version améliorée 2025
+# app.py - Observatoire Territorial Paris-Saclay - Version améliorée 2026
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import time
+import random
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Collapsed sur mobile
+    initial_sidebar_state="collapsed"
 )
 
 # ─── Toggle Dark / Light ────────────────────────────────────────────────────────
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
-# ─── Couleurs (définies en haut pour éviter NameError) ─────────────────────────
+dark_light = st.toggle("Dark / Light", value=st.session_state.dark_mode)
+if dark_light != st.session_state.dark_mode:
+    st.session_state.dark_mode = dark_light
+    st.rerun()
+
+# ─── Couleurs ───────────────────────────────────────────────────────────────────
 YELLOW = "#FDD100"
 VIOLET = "#6A1B9A"
 ACCENT_YELLOW = "#FFE066"
@@ -30,7 +35,7 @@ bg_color = BG_DARK if st.session_state.dark_mode else BG_LIGHT
 card_bg = CARD_DARK if st.session_state.dark_mode else CARD_LIGHT
 text_color = "#ffffff" if st.session_state.dark_mode else "#0f172a"
 
-# ─── Fond + style global ────────────────────────────────────────────────────────
+# ─── Fond + style glassmorphism ─────────────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
 
 st.markdown(f"""
@@ -124,10 +129,15 @@ st.markdown(f"""
             font-weight: 800;
             color: {ACCENT_YELLOW};
             margin: 8px 0;
+            animation: countUp 2s ease-out forwards;
         }}
         .kpi-delta {{
             font-size: 1.1rem;
             color: #10b981;
+        }}
+        @keyframes countUp {{
+            from {{ opacity: 0; transform: translateY(20px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
         }}
         .modal {{
             position: fixed;
@@ -191,7 +201,6 @@ st.markdown(f"""
             .header {{
                 flex-direction: column;
                 gap: 15px;
-                padding: 15px 20px;
             }}
         }}
     </style>
@@ -240,7 +249,16 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 current_theme = selected_tab.split(" ", 1)[1]
 
-# ─── Compteur animé simple (sans boucle while pour éviter blocage) ──────────────
+# ─── Chargement CSV ─────────────────────────────────────────────────────────────
+@st.cache_data
+def load_data(file_name):
+    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
+    try:
+        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
+    except:
+        return pd.DataFrame()
+
+# ─── Compteur KPI simple (CSS animation) ────────────────────────────────────────
 def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
     st.markdown(f"""
     <div class="kpi-card">
@@ -249,15 +267,6 @@ def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
         <div class="kpi-delta">{delta}</div>
     </div>
     """, unsafe_allow_html=True)
-
-# ─── Chargement CSV (exemples) ──────────────────────────────────────────────────
-@st.cache_data
-def load_data(file_name):
-    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
-    try:
-        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
-    except:
-        return pd.DataFrame()
 
 # ─── Contenu par page ───────────────────────────────────────────────────────────
 st.markdown("<div class='main'>", unsafe_allow_html=True)
@@ -318,15 +327,15 @@ elif current_theme == "Finance":
         st.session_state.finance_open = True
 
     if st.session_state.finance_open:
-        st.markdown("""
+        st.markdown(f"""
         <div class="modal">
             <div class="modal-content">
-                <h2 style="color:#FDD100; text-align:center;">Finance</h2>
+                <h2 style="color:{YELLOW}; text-align:center;">Finance</h2>
                 <input class="login-input" placeholder="Identifiant">
                 <input class="login-input" type="password" placeholder="Mot de passe">
                 <button class="login-btn">Se connecter</button>
                 <p style="text-align:center; margin-top:20px; color:#94a3b8;">
-                    <a href="#" style="color:#FDD100;">Mot de passe oublié ?</a>
+                    <a href="#" style="color:{YELLOW};">Mot de passe oublié ?</a>
                 </p>
             </div>
         </div>
