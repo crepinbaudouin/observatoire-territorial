@@ -1,9 +1,10 @@
+# app.py - Observatoire Territorial Paris-Saclay - KPI + icônes par page
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import time
 
-# Config
+# ─── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
@@ -11,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Fond d'écran (avec voile pour lisibilité)
+# ─── Fond d'écran ───────────────────────────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
 
 st.markdown(f"""
@@ -33,21 +34,15 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# Couleurs charte
+# ─── Couleurs charte ────────────────────────────────────────────────────────────
 YELLOW = "#FDD100"
 VIOLET = "#6A1B9A"
 ACCENT_YELLOW = "#FFE066"
-ACCENT_VIOLET = "#9F7AEA"
 
-# CSS waouh
+# ─── CSS KPI hexagones ──────────────────────────────────────────────────────────
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-    body, .stApp {{
-        color: #FFFFFF;
-        font-family: 'Inter', sans-serif;
-    }}
 
     .kpi-grid {{
         display: grid;
@@ -81,42 +76,46 @@ st.markdown(f"""
         text-shadow: 0 0 35px rgba(253, 209, 0, 0.9);
     }}
 
+    .page-title {{
+        font-size: 3.2rem;
+        font-weight: 800;
+        margin: 40px 0 30px;
+        background: linear-gradient(90deg, {YELLOW}, {VIOLET});
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }}
+
     .sidebar .sidebar-content {{
         background: rgba(10, 14, 23, 0.98) !important;
         backdrop-filter: blur(20px) !important;
-        border-right: 2px solid {VIOLET};
     }}
 
     footer {{visibility: hidden;}}
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
+# ─── Sidebar avec icônes ────────────────────────────────────────────────────────
 st.sidebar.title("Paris-Saclay")
 st.sidebar.image("logo_paris_saclay.png", width=220)
 
-page = st.sidebar.radio("Thématiques", [
-    "Accueil",
-    "Population",
-    "Emploi / Chômage",
-    "Économie",
-    "Social / Ménages",
-    "Santé",
-    "Éducation",
-    "Sports",
-    "Finance (restreint)"
-])
+pages = {
+    "Accueil": "🏠",
+    "Population": "👥",
+    "Emploi / Chômage": "💼",
+    "Économie": "📈",
+    "Social / Ménages": "🏡",
+    "Santé": "🩺",
+    "Éducation": "🎓",
+    "Sports": "⚽",
+    "Finance (restreint)": "💰"
+}
 
-# Chargement données
-@st.cache_data
-def load_data(file_name):
-    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
-    try:
-        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
-    except:
-        return pd.DataFrame()
+page_selected = st.sidebar.radio("Thématiques", list(pages.keys()))
 
-# Compteur animé
+# ─── Titre de page avec icône ──────────────────────────────────────────────────
+st.markdown(f'<div class="page-title">{pages[page_selected]} {page_selected}</div>', unsafe_allow_html=True)
+
+# ─── Fonction compteur animé ────────────────────────────────────────────────────
 def animated_counter(label, final_value, delta="", color=YELLOW, duration=2.0):
     placeholder = st.empty()
     start = time.time()
@@ -141,10 +140,17 @@ def animated_counter(label, final_value, delta="", color=YELLOW, duration=2.0):
     </div>
     """, unsafe_allow_html=True)
 
-# Accueil
-if page == "Accueil":
-    st.title("Observatoire Territorial Paris-Saclay")
+# ─── Chargement données ─────────────────────────────────────────────────────────
+@st.cache_data
+def load_data(file_name):
+    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
+    try:
+        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
+    except:
+        return pd.DataFrame()
 
+# ─── Accueil ────────────────────────────────────────────────────────────────────
+if page_selected == "Accueil":
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
     cols = st.columns(5)
 
@@ -165,10 +171,8 @@ if page == "Accueil":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Population (avec filtres et compteurs)
-elif page == "Population":
-    st.title("Population")
-
+# ─── Population ─────────────────────────────────────────────────────────────────
+elif page_selected == "Population":
     recensement = load_data("POP_RECENSEMENT.csv")
 
     if not recensement.empty:
@@ -195,6 +199,7 @@ elif page == "Population":
         total_latest = df_filtre[(df_filtre["Âge"] == "Total") & (df_filtre["Sexe"] == "Total")]["Valeur"].sum()
         young = df_filtre[(df_filtre["Âge"].str.contains("Moins de 15|Moins de 20", na=False))]["Valeur"].sum()
         elderly = df_filtre[(df_filtre["Âge"].str.contains("65 ans|65 ou plus", na=False))]["Valeur"].sum()
+        solde_naturel = 0  # à recalculer si tu as naissances/décès
 
         kpis_pop = [
             ("Population totale", int(total_latest), f"{annee_selectionnee}", YELLOW),
@@ -210,33 +215,27 @@ elif page == "Population":
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Graphiques
-        total = df_filtre[df_filtre["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
-        fig_line = px.line(total, x="Période", y="Valeur", title=f"Évolution population - {commune_selectionnee}", color_discrete_sequence=[YELLOW])
-        fig_line.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
-        st.plotly_chart(fig_line, use_container_width=True)
+        # Graphiques (simplifiés ici)
+        st.write("Graphiques et tableaux à venir dans la prochaine mise à jour")
 
-        st.dataframe(df_filtre.head(12).style.background_gradient(cmap='YlOrBr_r'))
-
-# Autres pages (exemple avec 4 KPI)
-elif page == "Économie":
-    st.title("Économie")
-
+# ─── Autres pages (4 KPI minimum) ───────────────────────────────────────────────
+else:
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
-    kpis_eco = [
-        ("Créations entreprises", 1620, "2024", YELLOW),
-        ("Établissements actifs", 27258, "2023", VIOLET),
-        ("Invest. innovation", 2800000000, "2025", YELLOW),
-        ("Chiffre d'affaires estimé", 12500000000, "+4.1 %", VIOLET)
+    kpis_placeholder = [
+        ("Indicateur 1", 1234, "2025", YELLOW),
+        ("Indicateur 2", 5678, "+5 %", VIOLET),
+        ("Indicateur 3", 91011, "stable", YELLOW),
+        ("Indicateur 4", 1213, "en cours", VIOLET)
     ]
 
     cols = st.columns(4)
-    for col, (label, value, delta, color) in zip(cols, kpis_eco):
+    for col, (label, value, delta, color) in zip(cols, kpis_placeholder):
         with col:
             animated_counter(label, value, delta, color)
 
     st.markdown("</div>", unsafe_allow_html=True)
+    st.info(f"Page {page} en construction – indicateurs à venir")
 
 # Footer
 st.markdown(f"""
