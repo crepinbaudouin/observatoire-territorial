@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + Charte Paris-Saclay
+# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + Lisibilité Charte
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -13,40 +13,42 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─── Couleurs charte Paris-Saclay ──────────────────────────────────────────────
+# ─── Couleurs charte Paris-Saclay + haute lisibilité ────────────────────────────
 YELLOW = "#FDD100"
-BLACK = "#000000"
 VIOLET = "#6A1B9A"
-DARK_GRAY = "#333333"
+BLACK = "#000000"
+DARK_GRAY = "#1A1F2E"
 LIGHT_GRAY = "#E0E0E0"
 WHITE = "#FFFFFF"
+ACCENT_YELLOW = "#FFE066"  # jaune plus clair pour texte sur fond sombre
+ACCENT_VIOLET = "#9F7AEA"  # violet clair pour contraste
 
-# ─── CSS ultra waouh ────────────────────────────────────────────────────────────
+# ─── CSS ultra waouh + lisibilité renforcée ─────────────────────────────────────
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
     :root {{
+        --bg: {DARK_GRAY};
+        --bg-card: rgba(26, 31, 46, 0.85);
+        --text: {WHITE};
         --yellow: {YELLOW};
         --violet: {VIOLET};
-        --black: {BLACK};
-        --dark-gray: {DARK_GRAY};
-        --light-gray: {LIGHT_GRAY};
-        --white: {WHITE};
-        --bg: linear-gradient(135deg, #0a0e17 0%, #1a1f2e 100%);
-        --glow-yellow: 0 0 30px rgba(253, 209, 0, 0.6);
-        --glow-violet: 0 0 30px rgba(106, 27, 154, 0.6);
+        --accent-yellow: {ACCENT_YELLOW};
+        --accent-violet: {ACCENT_VIOLET};
+        --glow-yellow: 0 0 35px rgba(253, 209, 0, 0.7);
+        --glow-violet: 0 0 35px rgba(106, 27, 154, 0.7);
     }}
 
     body, .stApp {{
         background: var(--bg);
-        color: var(--white);
+        color: var(--text);
         font-family: 'Inter', sans-serif;
     }}
 
     .hero {{
-        height: 85vh;
-        background: linear-gradient(135deg, rgba(106,27,154,0.7), rgba(0,0,0,0.85)),
+        height: 80vh;
+        background: linear-gradient(135deg, rgba(106,27,154,0.75), rgba(0,0,0,0.9)),
                     url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600');
         background-size: cover;
         background-position: center;
@@ -55,25 +57,24 @@ st.markdown(f"""
         justify-content: center;
         text-align: center;
         border-radius: 0 0 40px 40px;
-        overflow: hidden;
         box-shadow: 0 30px 80px rgba(0,0,0,0.8);
-        animation: heroPulse 12s infinite alternate;
+        animation: heroPulse 10s infinite alternate;
     }}
 
     @keyframes heroPulse {{
-        0% {{ opacity: 0.92; }}
+        0% {{ opacity: 0.93; }}
         100% {{ opacity: 1; }}
     }}
 
     .hero h1 {{
-        font-size: 6.2rem;
+        font-size: 6rem;
         font-weight: 900;
         margin: 0;
-        background: linear-gradient(90deg, var(--yellow), var(--violet), var(--yellow));
+        background: linear-gradient(90deg, var(--yellow), var(--accent-violet), var(--yellow));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        background-size: 200% 200%;
-        animation: gradientFlow 8s ease infinite;
+        background-size: 200%;
+        animation: gradientFlow 10s ease infinite;
         text-shadow: var(--glow-yellow);
     }}
 
@@ -85,7 +86,7 @@ st.markdown(f"""
 
     .hero-subtitle {{
         font-size: 1.9rem;
-        margin: 2rem 0 3.5rem;
+        margin: 2.5rem 0 4rem;
         color: var(--light-gray);
         max-width: 1000px;
     }}
@@ -93,7 +94,7 @@ st.markdown(f"""
     .btn-glow {{
         background: linear-gradient(45deg, var(--yellow), var(--violet));
         color: var(--black);
-        padding: 18px 52px;
+        padding: 18px 56px;
         font-size: 1.5rem;
         font-weight: 800;
         border: none;
@@ -101,18 +102,18 @@ st.markdown(f"""
         cursor: pointer;
         transition: all 0.45s;
         box-shadow: var(--glow-yellow), var(--glow-violet);
-        margin: 0 20px;
+        margin: 0 24px;
     }}
 
     .btn-glow:hover {{
-        transform: translateY(-8px) scale(1.08);
-        box-shadow: 0 0 80px rgba(253, 209, 0, 0.9),
-                    0 0 80px rgba(106, 27, 154, 0.7);
+        transform: translateY(-8px) scale(1.1);
+        box-shadow: 0 0 90px rgba(253, 209, 0, 1),
+                    0 0 90px rgba(106, 27, 154, 0.9);
     }}
 
     .kpi-grid {{
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
         gap: 40px;
         margin: 80px 0;
     }}
@@ -120,9 +121,9 @@ st.markdown(f"""
     .kpi-hex {{
         background: var(--bg-card);
         backdrop-filter: blur(24px);
-        border: 2px solid var(--violet);
+        border: 3px solid var(--violet);
         border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-        padding: 48px 32px;
+        padding: 52px 36px;
         text-align: center;
         transition: all 0.6s;
         box-shadow: 0 20px 60px rgba(0,0,0,0.6);
@@ -131,24 +132,24 @@ st.markdown(f"""
     }}
 
     .kpi-hex:hover {{
-        transform: scale(1.12) rotate(2deg);
+        transform: scale(1.14) rotate(3deg);
         border-color: var(--yellow);
-        box-shadow: 0 40px 120px rgba(253, 209, 0, 0.5),
-                    0 40px 120px rgba(106, 27, 154, 0.5);
+        box-shadow: 0 50px 140px rgba(253, 209, 0, 0.6),
+                    0 50px 140px rgba(106, 27, 154, 0.6);
     }}
 
     .kpi-number {{
-        font-size: 4.8rem;
+        font-size: 5rem;
         font-weight: 900;
-        color: var(--yellow);
-        margin: 20px 0 12px;
+        color: var(--accent-yellow);
+        margin: 20px 0 16px;
         text-shadow: var(--glow-yellow);
     }}
 
     .sidebar .sidebar-content {{
         background: rgba(10, 14, 23, 0.98) !important;
         backdrop-filter: blur(20px) !important;
-        border-right: 1px solid var(--violet);
+        border-right: 2px solid var(--violet);
     }}
 
     footer {{visibility: hidden;}}
@@ -161,7 +162,7 @@ st.markdown("""
     <div>
         <h1>Observatoire Territorial</h1>
         <p class="hero-subtitle">
-            Agglomération Paris-Saclay — Données stratégiques en temps réel
+            Agglomération Paris-Saclay — Indicateurs stratégiques en temps réel
         </p>
         <div>
             <button class="btn-glow">Explorer les indicateurs</button>
@@ -211,7 +212,7 @@ if page == "Accueil":
             <div class="kpi-hex" style="border-color:{color};">
                 <h3 style="color:{color};">{label}</h3>
                 <div class="kpi-number" style="color:{color};">{value}</div>
-                <p style="color:#94a3b8;">{delta}</p>
+                <p style="color:#E0E0E0;">{delta}</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -220,7 +221,7 @@ if page == "Accueil":
     st.markdown("""
     <div style="text-align:center; margin:80px 0;">
         <h2 style="color:var(--yellow);">Bienvenue dans l'Observatoire</h2>
-        <p style="font-size:1.4rem; color:#cbd5e1;">
+        <p style="font-size:1.4rem; color:#E0E0E0;">
             Sélectionnez une thématique dans la barre latérale pour explorer les indicateurs clés.
         </p>
     </div>
@@ -234,31 +235,54 @@ elif page == "Population":
     if not df.empty:
         df = df.rename(columns=lambda x: x.strip())
 
+        # Indicateur 1 : Évolution population totale
         st.subheader("Évolution de la population totale")
         total = df[df["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
-        fig = px.line(total, x="Période", y="Valeur", title="Évolution population totale", color_discrete_sequence=[YELLOW])
-        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
-        st.plotly_chart(fig, use_container_width=True)
+        fig_line = px.line(total, x="Période", y="Valeur",
+                           title="Évolution population totale",
+                           color_discrete_sequence=[YELLOW])
+        fig_line.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font_color=WHITE,
+            title_font_color=YELLOW
+        )
+        st.plotly_chart(fig_line, use_container_width=True)
 
+        # Indicateur 2 : Répartition par âge (dernière période) - couleurs lisibles
         st.subheader("Répartition par âge – Dernière période")
         last = df["Période"].max()
         age_df = df[(df["Période"] == last) & (df["Âge"] != "Total") & (df["Sexe"] == "Total")]
-        fig_pie = px.pie(age_df, values="Valeur", names="Âge", color_discrete_sequence=[VIOLET, YELLOW, "#8B5CF6", "#A78BFA"])
-        fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        colors = [VIOLET, YELLOW, "#9F7AEA", "#D6BCFA", "#FBBF24", "#F87171"]  # palette lisible
+        fig_pie = px.pie(age_df, values="Valeur", names="Âge",
+                         color_discrete_sequence=colors,
+                         title=f"Répartition par âge en {last}")
+        fig_pie.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font_color=WHITE,
+            legend_title_font_color=WHITE,
+            legend_font_color=WHITE
+        )
         st.plotly_chart(fig_pie, use_container_width=True)
 
+        # Tableau extrait
         st.subheader("Données brutes (extrait)")
-        st.dataframe(df.head(12))
+        st.dataframe(df.head(12).style.background_gradient(cmap='YlOrBr'))
 
-# ─── Emploi / Chômage ──────────────────────────────────────────────────────────
+    else:
+        st.warning("Données POP_RECENSEMENT.csv non disponibles")
+
+# ─── Autres pages (placeholders enrichis) ───────────────────────────────────────
 elif page == "Emploi / Chômage":
     st.title("Emploi / Chômage")
     df = pd.read_csv("https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/POP_CHOMAGE_DARES.csv", sep=";", decimal=",")
     if not df.empty:
-        st.dataframe(df.head(10))
-        st.info("Graphiques interactifs à venir")
+        st.subheader("Extrait des données")
+        st.dataframe(df.head(10).style.background_gradient(cmap='YlOrBr'))
+    else:
+        st.warning("Données non disponibles")
 
-# ─── Économie ───────────────────────────────────────────────────────────────────
 elif page == "Économie":
     st.title("Économie")
     files = ["ECO_ENT_CREATION.csv", "ECO_ETAB_FLORES_5.csv", "ECO_ETAB_STOCKS.csv"]
@@ -266,9 +290,8 @@ elif page == "Économie":
         df = pd.read_csv(f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{f}", sep=";", decimal=",")
         if not df.empty:
             st.subheader(f.replace(".csv", ""))
-            st.dataframe(df.head(8))
+            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr'))
 
-# ─── Social / Ménages ───────────────────────────────────────────────────────────
 elif page == "Social / Ménages":
     st.title("Social / Ménages")
     files = ["POP_MENAGES.csv", "POP_FILOSOFI_MENAGE_MONO.csv", "POP_FILOSOFI_AGE.csv"]
@@ -276,18 +299,16 @@ elif page == "Social / Ménages":
         df = pd.read_csv(f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{f}", sep=";", decimal=",")
         if not df.empty:
             st.subheader(f.replace(".csv", ""))
-            st.dataframe(df.head(8))
+            st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr'))
 
-# ─── Santé, Éducation, Sports (placeholders) ────────────────────────────────────
 elif page in ["Santé", "Éducation", "Sports"]:
     st.title(page)
     st.info(f"Indicateurs {page.lower()} à venir – données non encore intégrées")
 
-# ─── Finance restreinte ─────────────────────────────────────────────────────────
 elif page == "Finance (restreint)":
     st.title("Finance – Accès sécurisé")
     pwd = st.text_input("Mot de passe", type="password")
-    if pwd == "saclay2026":  # ← À CHANGER !!!
+    if pwd == "saclay2026":  # À CHANGER !!!
         st.success("Accès autorisé")
         st.info("Données financières sensibles – à intégrer prochainement")
     else:
