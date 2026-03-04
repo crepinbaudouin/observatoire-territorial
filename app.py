@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Version améliorée 2026
+# app.py - Observatoire Territorial Paris-Saclay - Version finale améliorée
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -129,15 +129,10 @@ st.markdown(f"""
             font-weight: 800;
             color: {ACCENT_YELLOW};
             margin: 8px 0;
-            animation: countUp 2s ease-out forwards;
         }}
         .kpi-delta {{
             font-size: 1.1rem;
             color: #10b981;
-        }}
-        @keyframes countUp {{
-            from {{ opacity: 0; transform: translateY(20px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
         }}
         .modal {{
             position: fixed;
@@ -258,7 +253,7 @@ def load_data(file_name):
     except:
         return pd.DataFrame()
 
-# ─── Compteur KPI simple (CSS animation) ────────────────────────────────────────
+# ─── KPI simple (CSS animation) ─────────────────────────────────────────────────
 def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
     st.markdown(f"""
     <div class="kpi-card">
