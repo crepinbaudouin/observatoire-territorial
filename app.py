@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + 4+ KPI par page
+# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + KPI Éducation réels
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -257,7 +257,7 @@ elif page == "Emploi / Chômage":
 
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
-    # 4 KPI Emploi/Chômage réels ou estimés
+    # 4 KPI Emploi/Chômage
     kpis_emp = [
         ("Taux chômage estimé", "8.2 %", "2025", YELLOW),
         ("Demandeurs d'emploi", "28 500", "-4.1 %", VIOLET),
@@ -300,7 +300,6 @@ elif page == "Économie":
 
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
-    # KPI Économie réels
     if not creation.empty:
         last_year = creation["Période"].max()
         nb_creations = creation[creation["Période"] == last_year]["Valeur"].sum()
@@ -398,8 +397,54 @@ elif page == "Social / Ménages":
         st.subheader("Tension logement (extrait)")
         st.dataframe(tension.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
+# ─── Éducation ──────────────────────────────────────────────────────────────────
+elif page == "Éducation":
+    st.title("Éducation")
+
+    diplomes = load_data("POP_DIPLOMES.csv")
+    actif_diplome = load_data("POP_ACTIF_INACTIF_DIPLOME.csv")
+
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+
+    # KPI Éducation réels
+    if not diplomes.empty:
+        diplomes = diplomes.rename(columns=lambda x: x.strip())
+
+        # Diplômés Bac+3+
+        bac_plus = diplomes[diplomes["Diplôme"].str.contains("Baccalauréat universitaire|Licence|Maîtrise|Bac\+3|Bac\+4", na=False)]["Valeur"].sum()
+        cap_bep = diplomes[diplomes["Diplôme"].str.contains("CAP|BEP", na=False)]["Valeur"].sum()
+        aucun_diplome = diplomes[diplomes["Diplôme"].str.contains("Aucun diplôme", na=False)]["Valeur"].sum()
+
+        kpis_edu = [
+            ("Diplômés Bac+3+", f"{int(bac_plus):,}", "2022", YELLOW),
+            ("CAP / BEP", f"{int(cap_bep):,}", "2022", VIOLET),
+            ("Aucun diplôme", f"{int(aucun_diplome):,}", "15 ans+", YELLOW),
+            ("Actifs 15-64 ans", "En cours", "stable", VIOLET)
+        ]
+
+        cols = st.columns(4)
+        for col, (label, value, delta, color) in zip(cols, kpis_edu):
+            with col:
+                st.markdown(f"""
+                <div class="kpi-hex" style="border-color:{color};">
+                    <h3 style="color:{color};">{label}</h3>
+                    <div class="kpi-number" style="color:{color};">{value}</div>
+                    <p style="color:#E0E0E0;">{delta}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if not diplomes.empty:
+        st.subheader("Diplômes (extrait)")
+        st.dataframe(diplomes.head(10).style.background_gradient(cmap='YlOrBr_r'))
+
+    if not actif_diplome.empty:
+        st.subheader("Actifs / Inactifs par diplôme (extrait)")
+        st.dataframe(actif_diplome.head(8).style.background_gradient(cmap='YlOrBr_r'))
+
 # ─── Santé, Éducation, Sports ───────────────────────────────────────────────────
-elif page in ["Santé", "Éducation", "Sports"]:
+elif page in ["Santé", "Sports"]:
     st.title(page)
     st.markdown(f"""
     <div class='kpi-grid'>
