@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Ultra Waouh + KPI réels Économie
+# app.py - Observatoire Territorial Paris-Saclay - 4+ KPI par page + Ultra Waouh
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -162,15 +162,15 @@ def load_data(file_name):
 if page == "Accueil":
     st.title("Observatoire Territorial Paris-Saclay")
 
-    # KPI hexagonales waouh (fictifs + réels quand possible)
+    # 5 KPI hexagonales waouh (fictifs réalistes)
     st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
     kpis = [
-        ("Population", "785 420", "+2.8 %", YELLOW),
-        ("Emplois tech", "142 000", "+19 %", VIOLET),
-        ("Startups", "1 620", "14 licornes", YELLOW),
-        ("Satisfaction", "86.4 %", "2025", VIOLET),
-        ("Invest. R&D", "3.8 Md€", "cumulé", YELLOW)
+        ("Population totale", "785 420", "+2.8 %", YELLOW),
+        ("Emplois tech & R&D", "142 000", "+19 %", VIOLET),
+        ("Startups actives", "1 620", "14 licornes", YELLOW),
+        ("Satisfaction résidents", "86.4 %", "2025", VIOLET),
+        ("Investissements R&D", "3.8 Md€", "cumulé", YELLOW)
     ]
 
     cols = st.columns(5)
@@ -194,33 +194,43 @@ elif page == "Population":
     if not df.empty:
         df = df.rename(columns=lambda x: x.strip())
 
-        # KPI Population
-        total_latest = df[(df["Âge"] == "Total") & (df["Sexe"] == "Total")]["Valeur"].iloc[-1]
-        st.markdown(f"""
-        <div class='kpi-grid'>
-            <div class="kpi-hex" style="border-color:{YELLOW};">
-                <h3 style="color:{YELLOW};">Population totale</h3>
-                <div class="kpi-number" style="color:{YELLOW};">{int(total_latest):,}</div>
-                <p style="color:#E0E0E0;">Dernière période</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # 4 KPI Population
+        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
 
-        # Courbe évolution
+        total_latest = df[(df["Âge"] == "Total") & (df["Sexe"] == "Total")]["Valeur"].iloc[-1]
+        last_period = df["Période"].max()
+        young = df[(df["Période"] == last_period) & (df["Âge"].str.contains("Moins de 15"))]["Valeur"].sum()
+        elderly = df[(df["Période"] == last_period) & (df["Âge"].str.contains("65 ans et plus"))]["Valeur"].sum()
+
+        kpis_pop = [
+            ("Population totale", f"{int(total_latest):,}", f"{last_period}", YELLOW),
+            ("Moins de 15 ans", f"{int(young):,}", "part jeunes", VIOLET),
+            ("65 ans et plus", f"{int(elderly):,}", "part seniors", YELLOW),
+            ("Croissance récente", "+2.8 %", "annuelle estimée", VIOLET)
+        ]
+
+        cols = st.columns(4)
+        for col, (label, value, delta, color) in zip(cols, kpis_pop):
+            with col:
+                st.markdown(f"""
+                <div class="kpi-hex" style="border-color:{color};">
+                    <h3 style="color:{color};">{label}</h3>
+                    <div class="kpi-number" style="color:{color};">{value}</div>
+                    <p style="color:#E0E0E0;">{delta}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # Graphiques
         total = df[df["Âge"] == "Total"].groupby("Période")["Valeur"].sum().reset_index()
-        fig_line = px.line(total, x="Période", y="Valeur",
-                           title="Évolution population totale",
-                           color_discrete_sequence=[YELLOW])
+        fig_line = px.line(total, x="Période", y="Valeur", title="Évolution population totale", color_discrete_sequence=[YELLOW])
         fig_line.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
         st.plotly_chart(fig_line, use_container_width=True)
 
-        # Camembert âges
-        last = df["Période"].max()
-        age_df = df[(df["Période"] == last) & (df["Âge"] != "Total") & (df["Sexe"] == "Total")]
+        age_df = df[(df["Période"] == last_period) & (df["Âge"] != "Total") & (df["Sexe"] == "Total")]
         colors = [VIOLET, YELLOW, "#9F7AEA", "#D6BCFA", "#FBBF24", "#F87171"]
-        fig_pie = px.pie(age_df, values="Valeur", names="Âge",
-                         color_discrete_sequence=colors,
-                         title=f"Répartition par âge en {last}")
+        fig_pie = px.pie(age_df, values="Valeur", names="Âge", color_discrete_sequence=colors)
         fig_pie.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color=WHITE)
         st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -235,16 +245,28 @@ elif page == "Emploi / Chômage":
     df = load_data("POP_CHOMAGE_DARES.csv")
 
     if not df.empty:
-        # KPI exemple (à affiner avec tes données)
-        st.markdown(f"""
-        <div class='kpi-grid'>
-            <div class="kpi-hex" style="border-color:{YELLOW};">
-                <h3 style="color:{YELLOW};">Taux chômage</h3>
-                <div class="kpi-number" style="color:{YELLOW};">8.2 %</div>
-                <p style="color:#E0E0E0;">(estimation 2025)</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+
+        # KPI fictifs réalistes (à affiner avec tes données)
+        kpis_emp = [
+            ("Taux chômage", "8.2 %", "2025 estim.", YELLOW),
+            ("Demandeurs d'emploi", "28 500", "-4.1 %", VIOLET),
+            ("Emplois créés", "12 300", "année en cours", YELLOW),
+            ("Secteur tech dominant", "42 %", "des emplois", VIOLET)
+        ]
+
+        cols = st.columns(4)
+        for col, (label, value, delta, color) in zip(cols, kpis_emp):
+            with col:
+                st.markdown(f"""
+                <div class="kpi-hex" style="border-color:{color};">
+                    <h3 style="color:{color};">{label}</h3>
+                    <div class="kpi-number" style="color:{color};">{value}</div>
+                    <p style="color:#E0E0E0;">{delta}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
         st.dataframe(df.head(10).style.background_gradient(cmap='YlOrBr_r'))
     else:
@@ -254,39 +276,54 @@ elif page == "Emploi / Chômage":
 elif page == "Économie":
     st.title("Économie")
 
-    # Chargement des 3 fichiers
     creation = load_data("ECO_ENT_CREATION.csv")
     flores = load_data("ECO_ETAB_FLORES_5.csv")
     stocks = load_data("ECO_ETAB_STOCKS.csv")
 
-    # KPI Économie - créations récentes
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+
+    # KPI Économie réels
     if not creation.empty:
         last_year = creation["Période"].max()
         nb_creations = creation[creation["Période"] == last_year]["Valeur"].sum()
         st.markdown(f"""
-        <div class='kpi-grid'>
-            <div class="kpi-hex" style="border-color:{YELLOW};">
-                <h3 style="color:{YELLOW};">Créations d'entreprises</h3>
-                <div class="kpi-number" style="color:{YELLOW};">{int(nb_creations):,}</div>
-                <p style="color:#E0E0E0;">en {last_year}</p>
-            </div>
+        <div class="kpi-hex" style="border-color:{YELLOW};">
+            <h3 style="color:{YELLOW};">Créations entreprises</h3>
+            <div class="kpi-number" style="color:{YELLOW};">{int(nb_creations):,}</div>
+            <p style="color:#E0E0E0;">en {last_year}</p>
         </div>
         """, unsafe_allow_html=True)
 
-    # Stocks d'établissements
     if not stocks.empty:
         total_stocks = stocks[stocks["Activité économique"] == "Total"]["Valeur"].iloc[-1]
         st.markdown(f"""
-        <div class='kpi-grid'>
-            <div class="kpi-hex" style="border-color:{VIOLET};">
-                <h3 style="color:{VIOLET};">Établissements actifs</h3>
-                <div class="kpi-number" style="color:{VIOLET};">{int(total_stocks):,}</div>
-                <p style="color:#E0E0E0;">Dernière période</p>
-            </div>
+        <div class="kpi-hex" style="border-color:{VIOLET};">
+            <h3 style="color:{VIOLET};">Établissements actifs</h3>
+            <div class="kpi-number" style="color:{VIOLET};">{int(total_stocks):,}</div>
+            <p style="color:#E0E0E0;">Dernière période</p>
         </div>
         """, unsafe_allow_html=True)
 
-    # Tableau extraits
+    # Autres KPI fictifs réalistes
+    kpis_eco = [
+        ("Chiffre d'affaires global", "12.5 Md€", "+4.1 %", YELLOW),
+        ("Invest. innovation", "2.8 Md€", "2025", VIOLET)
+    ]
+
+    cols = st.columns(4)
+    for col, (label, value, delta, color) in zip(cols, kpis_eco):
+        with col:
+            st.markdown(f"""
+            <div class="kpi-hex" style="border-color:{color};">
+                <h3 style="color:{color};">{label}</h3>
+                <div class="kpi-number" style="color:{color};">{value}</div>
+                <p style="color:#E0E0E0;">{delta}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Tableaux extraits
     if not creation.empty:
         st.subheader("Créations d'entreprises (extrait)")
         st.dataframe(creation.head(10).style.background_gradient(cmap='YlOrBr_r'))
@@ -305,15 +342,53 @@ elif page == "Social / Ménages":
             st.subheader(f.replace(".csv", ""))
             st.dataframe(df.head(8).style.background_gradient(cmap='YlOrBr_r'))
 
+    # KPI placeholders (à remplacer par vrais calculs)
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+
+    kpis_soc = [
+        ("Ménages monoparentaux", "18.7 %", "2025", YELLOW),
+        ("Taille moyenne ménage", "2.4 pers.", "stable", VIOLET),
+        ("Revenu médian", "38 200 €", "+3.2 %", YELLOW),
+        ("Taux pauvreté", "9.1 %", "en baisse", VIOLET)
+    ]
+
+    cols = st.columns(4)
+    for col, (label, value, delta, color) in zip(cols, kpis_soc):
+        with col:
+            st.markdown(f"""
+            <div class="kpi-hex" style="border-color:{color};">
+                <h3 style="color:{color};">{label}</h3>
+                <div class="kpi-number" style="color:{color};">{value}</div>
+                <p style="color:#E0E0E0;">{delta}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 # ─── Santé, Éducation, Sports ───────────────────────────────────────────────────
 elif page in ["Santé", "Éducation", "Sports"]:
     st.title(page)
     st.markdown(f"""
     <div class='kpi-grid'>
+        <div class="kpi-hex" style="border-color:{YELLOW};">
+            <h3 style="color:{YELLOW};">Indicateur 1</h3>
+            <div class="kpi-number" style="color:{YELLOW};">En cours</div>
+            <p style="color:#E0E0E0;">Données à venir</p>
+        </div>
         <div class="kpi-hex" style="border-color:{VIOLET};">
-            <h3 style="color:{VIOLET};">Indicateur clé</h3>
+            <h3 style="color:{VIOLET};">Indicateur 2</h3>
             <div class="kpi-number" style="color:{VIOLET};">En cours</div>
-            <p style="color:#E0E0E0;">Données à intégrer</p>
+            <p style="color:#E0E0E0;">Données à venir</p>
+        </div>
+        <div class="kpi-hex" style="border-color:{YELLOW};">
+            <h3 style="color:{YELLOW};">Indicateur 3</h3>
+            <div class="kpi-number" style="color:{YELLOW};">En cours</div>
+            <p style="color:#E0E0E0;">Données à venir</p>
+        </div>
+        <div class="kpi-hex" style="border-color:{VIOLET};">
+            <h3 style="color:{VIOLET};">Indicateur 4</h3>
+            <div class="kpi-number" style="color:{VIOLET};">En cours</div>
+            <p style="color:#E0E0E0;">Données à venir</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -323,18 +398,33 @@ elif page in ["Santé", "Éducation", "Sports"]:
 elif page == "Finance (restreint)":
     st.title("Finance – Accès sécurisé")
     pwd = st.text_input("Mot de passe", type="password")
-    if pwd == "saclay2026":  # À CHANGER !!!
+    if pwd == "saclay2026":  # CHANGE CE MOT DE PASSE !!!
         st.success("Accès autorisé")
-        st.markdown("""
+        st.markdown(f"""
         <div class='kpi-grid'>
             <div class="kpi-hex" style="border-color:{YELLOW};">
-                <h3 style="color:{YELLOW};">Budget</h3>
+                <h3 style="color:{YELLOW};">Budget 2026</h3>
                 <div class="kpi-number" style="color:{YELLOW};">En cours</div>
                 <p style="color:#E0E0E0;">Données sensibles</p>
             </div>
+            <div class="kpi-hex" style="border-color:{VIOLET};">
+                <h3 style="color:{VIOLET};">Investissement</h3>
+                <div class="kpi-number" style="color:{VIOLET};">En cours</div>
+                <p style="color:#E0E0E0;">Données sensibles</p>
+            </div>
+            <div class="kpi-hex" style="border-color:{YELLOW};">
+                <h3 style="color:{YELLOW};">Dette</h3>
+                <div class="kpi-number" style="color:{YELLOW};">En cours</div>
+                <p style="color:#E0E0E0;">Données sensibles</p>
+            </div>
+            <div class="kpi-hex" style="border-color:{VIOLET};">
+                <h3 style="color:{VIOLET};">Résultat net</h3>
+                <div class="kpi-number" style="color:{VIOLET};">En cours</div>
+                <p style="color:#E0E0E0;">Données sensibles</p>
+            </div>
         </div>
-        """.format(YELLOW=YELLOW), unsafe_allow_html=True)
-        st.info("Données financières à intégrer prochainement")
+        """, unsafe_allow_html=True)
+        st.info("Données financières sensibles – à intégrer prochainement")
     else:
         st.error("Accès refusé")
 
