@@ -1,4 +1,4 @@
-# app.py - Observatoire Territorial Paris-Saclay - Version finale améliorée 2026
+# app.py - Observatoire Territorial Paris-Saclay - Version corrigée sans random
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -331,22 +331,23 @@ elif current_theme == "Économie":
         fig = px.line(df.groupby("Période")["Valeur"].sum().reset_index(), x="Période", y="Valeur", title="Évolution créations entreprises")
         st.plotly_chart(fig, use_container_width=True)
 
-elif current_theme == "Éducation":
-    df = load_data("POP_DIPLOMES.csv")
+elif current_theme == "Social / Ménages":
+    df = load_data("POP_MENAGES.csv")
     if not df.empty:
         st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            animated_kpi("Bac+3 et plus", 27584, "2022")
+            animated_kpi("Ménages monoparentaux", "18.7 %", "2021")
         with col2:
-            animated_kpi("CAP / BEP", 34872, "2022")
+            animated_kpi("Taille moyenne ménage", "2.4 pers.", "stable")
         with col3:
-            animated_kpi("Aucun diplôme", 14220, "15 ans+")
+            animated_kpi("Revenu médian", "27 650 €", "2021")
         with col4:
-            animated_kpi("Taux insertion", "92 %", "estimé")
+            animated_kpi("Taux pauvreté", "10.1 %", "2021")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        fig = px.pie(df.head(10), values="Valeur", names="Diplôme", title="Répartition diplômes")
+        # Exemple graphique
+        fig = px.bar(df.head(10), x="Géographie", y="Valeur", title="Ménages par commune")
         st.plotly_chart(fig, use_container_width=True)
 
 elif current_theme == "Finance":
@@ -381,7 +382,7 @@ else:
     cols = st.columns(4)
     for i, col in enumerate(cols):
         with col:
-            animated_kpi(f"Indicateur {i+1}", random.randint(1000, 50000), "+X %")
+            animated_kpi(f"Indicateur {i+1}", "12 345", "+X %")
     st.markdown("</div>", unsafe_allow_html=True)
     st.info(f"Contenu {current_theme} en cours de développement")
 
