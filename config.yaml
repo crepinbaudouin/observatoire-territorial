@@ -1,0 +1,23 @@
+credentials:
+  usernames:
+    Mathilde.LOBE:
+      email: Mathilde.LOBE-ELEME@paris-saclay.com
+      name: Mathilde.LOBE
+      password: $2b$12$NwLkay1n3BCpmji17Y1squ0hlGQX4uZBuLpajSWs0wrjx6SNmEwhG 
+    crepin.BELL:
+      email: Crepin.BELL@paris-saclay.com
+      name: Crepin BELL
+      password: $2b$12$8LGffgbpdcecbuq9lHsSiuAkD8G.n5w0ZX/LC9Sc6sH4gE656uup2  
+    Axelle.CHAMPAGNE:
+      email: Axelle.CHAMPAGNE@paris-saclay.com
+      name: Axelle CHAMPAGNE
+      password: $2b$12$Juvyp1p4pi.SJRYtgdKXfea2X5yhs3TWlCsjTUzH9N8QHo9J1ZU9W  
+
+cookie:
+  expiry_days: 30
+  key: random_string_secret_tres_long_et_unique_ici_2026  # change ça !
+  name: finance_cookie
+
+preauthorized:
+  emails:
+    - nouveau.collaborateur@paris-saclay.fr
