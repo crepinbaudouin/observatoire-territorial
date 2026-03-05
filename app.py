@@ -382,7 +382,98 @@ elif current_theme == "Emploi / Chômage":
                           values="Valeur", names="Diplôme",
                           title="Actifs par niveau de diplôme")
         st.plotly_chart(fig_dipl, use_container_width=True)
+elif current_theme == "Économie":
+    stocks = load_data("ECO_ETAB_STOCKS.csv")
+    flores = load_data("ECO_ETAB_FLORES_5.csv")
+    creations = load_data("ECO_ENT_CREATION.csv")
 
+    st.subheader("Filtres interactifs")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if not stocks.empty:
+            stocks["Période"] = stocks["Période"].astype(str)
+            periodes = sorted(stocks["Période"].unique(), reverse=True)
+            periode_sel = st.selectbox("Période", periodes, index=0)
+
+    with col2:
+        if not stocks.empty:
+            activites = ["Toutes"] + sorted(stocks["Activité économique"].unique().tolist())
+            activite_sel = st.selectbox("Activité économique", activites)
+
+    with col3:
+        if not flores.empty:
+            tailles = ["Toutes"] + sorted(flores["Taille en tranches d'effectifs"].unique().tolist())
+            taille_sel = st.selectbox("Taille d'établissement", tailles)
+
+    # Filtrage des données
+    df_stocks = stocks.copy()
+    df_stocks = df_stocks[df_stocks["Période"] == periode_sel]
+    if activite_sel != "Toutes":
+        df_stocks = df_stocks[df_stocks["Activité économique"] == activite_sel]
+
+    # KPI réels
+    st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        total_etab = int(df_stocks[df_stocks["Activité économique"] == "Total"]["Valeur"].sum())
+        animated_kpi("Nombre d'établissements", total_etab, f"{periode_sel}")
+
+    with col2:
+        if not creations.empty:
+            creations["Période"] = creations["Période"].astype(str)
+            last_periode_crea = creations["Période"].max()
+            crea_total = int(creations[creations["Période"] == last_periode_crea]["Valeur"].sum())
+            animated_kpi("Créations d'entreprises", crea_total, f"{last_periode_crea}")
+        else:
+            animated_kpi("Créations d'entreprises", "N/A", "données manquantes")
+
+    with col3:
+        if not flores.empty:
+            df_flores = flores.copy()
+            df_flores = df_flores[df_flores["Période"] == periode_sel]
+            if taille_sel != "Toutes":
+                df_flores = df_flores[df_flores["Taille en tranches d'effectifs"] == taille_sel]
+            effectif_total = int(df_flores["Effectifs présents la dernière semaine de décembre"].sum())
+            animated_kpi("Effectifs salariés", effectif_total, f"{periode_sel}")
+
+    with col4:
+        animated_kpi("Taux de création estimé", "N/A", "(données complémentaires nécessaires)")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Graphiques Plotly
+    if not df_stocks.empty:
+        # 1. Évolution du nombre d'établissements (toutes activités)
+        evol_etab = stocks.groupby("Période")["Valeur"].sum().reset_index()
+        fig_evol = px.line(evol_etab, x="Période", y="Valeur",
+                           title="Évolution du nombre d'établissements",
+                           markers=True)
+        st.plotly_chart(fig_evol, use_container_width=True)
+
+        # 2. Top 5 activités économiques (dernière période)
+        top_activ = df_stocks.groupby("Activité économique")["Valeur"].sum().nlargest(5).reset_index()
+        fig_activ = px.bar(top_activ, x="Activité économique", y="Valeur",
+                           title="Top 5 activités économiques (établissements)",
+                           color="Valeur", color_continuous_scale="Viridis")
+        fig_activ.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig_activ, use_container_width=True)
+
+    if not flores.empty:
+        # 3. Répartition par taille d'établissement (dernière période)
+        taille_dist = flores[flores["Période"] == periode_sel].groupby("Taille en tranches d'effectifs")["Établissements"].sum().reset_index()
+        fig_taille = px.pie(taille_dist, values="Établissements", names="Taille en tranches d'effectifs",
+                            title="Répartition des établissements par taille")
+        st.plotly_chart(fig_taille, use_container_width=True)
+
+    if not creations.empty:
+        # 4. Évolution des créations d'entreprises
+        evol_crea = creations.groupby("Période")["Valeur"].sum().reset_index()
+        fig_crea = px.line(evol_crea, x="Période", y="Valeur",
+                           title="Évolution des créations d'entreprises",
+                           markers=True)
+        st.plotly_chart(fig_crea, use_container_width=True)
 else:
     st.markdown(f"<h2 style='text-align:center;'>{current_theme}</h2>", unsafe_allow_html=True)
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
