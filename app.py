@@ -382,6 +382,7 @@ elif current_theme == "Emploi / Chômage":
                           values="Valeur", names="Diplôme",
                           title="Actifs par niveau de diplôme")
         st.plotly_chart(fig_dipl, use_container_width=True)
+        
 elif current_theme == "Économie":
     stocks = load_data("ECO_ETAB_STOCKS.csv")
     flores = load_data("ECO_ETAB_FLORES_5.csv")
@@ -417,15 +418,15 @@ elif current_theme == "Économie":
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        total_etab = int(df_stocks[df_stocks["Activité économique"] == "Total"]["Valeur"].sum())
-        animated_kpi("Nombre d'établissements", total_etab, f"{periode_sel}")
+        total_etab = int(df_stocks[df_stocks["Activité économique"] == "Total"]["Valeur"].sum()) if not df_stocks.empty else 0
+        animated_kpi("Nombre d'établissements", f"{total_etab:,}", f"{periode_sel}")
 
     with col2:
         if not creations.empty:
             creations["Période"] = creations["Période"].astype(str)
             last_periode_crea = creations["Période"].max()
             crea_total = int(creations[creations["Période"] == last_periode_crea]["Valeur"].sum())
-            animated_kpi("Créations d'entreprises", crea_total, f"{last_periode_crea}")
+            animated_kpi("Créations d'entreprises", f"{crea_total:,}", f"{last_periode_crea}")
         else:
             animated_kpi("Créations d'entreprises", "N/A", "données manquantes")
 
@@ -435,8 +436,14 @@ elif current_theme == "Économie":
             df_flores = df_flores[df_flores["Période"] == periode_sel]
             if taille_sel != "Toutes":
                 df_flores = df_flores[df_flores["Taille en tranches d'effectifs"] == taille_sel]
-            effectif_total = int(df_flores["Effectifs présents la dernière semaine de décembre"].sum())
-            animated_kpi("Effectifs salariés", effectif_total, f"{periode_sel}")
+            
+            # Filtre sur la mesure "Effectifs"
+            effectifs_df = df_flores[df_flores["Mesures de Flores"] == "Effectifs présents la dernière semaine de décembre"]
+            effectif_total = int(effectifs_df["Valeur"].sum()) if not effectifs_df.empty else 0
+            
+            animated_kpi("Effectifs salariés", f"{effectif_total:,}", f"{periode_sel}")
+        else:
+            animated_kpi("Effectifs salariés", "N/A", "données manquantes")
 
     with col4:
         animated_kpi("Taux de création estimé", "N/A", "(données complémentaires nécessaires)")
