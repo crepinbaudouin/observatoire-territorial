@@ -1,9 +1,8 @@
-# app.py - Observatoire Territorial Paris-Saclay - Avec données emploi/chômage réelles
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ─── Config ─────────────────────────────────────────────────────────────────────
+# ─── CONFIGURATION ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
@@ -11,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ─── Toggle Dark / Light ────────────────────────────────────────────────────────
+# ─── MODE CLAIR/SOMBRE ──────────────────────────────────────────────────────────
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
@@ -20,7 +19,7 @@ if dark_light != st.session_state.dark_mode:
     st.session_state.dark_mode = dark_light
     st.rerun()
 
-# ─── Couleurs ───────────────────────────────────────────────────────────────────
+# ─── COULEURS ───────────────────────────────────────────────────────────────────
 YELLOW = "#FDD100"
 VIOLET = "#6A1B9A"
 ACCENT_YELLOW = "#FFE066"
@@ -34,7 +33,7 @@ bg_color = BG_DARK if st.session_state.dark_mode else BG_LIGHT
 card_bg = CARD_DARK if st.session_state.dark_mode else CARD_LIGHT
 text_color = "#ffffff" if st.session_state.dark_mode else "#0f172a"
 
-# ─── Fond + style ───────────────────────────────────────────────────────────────
+# ─── FOND D'ÉCRAN + STYLE ───────────────────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
 
 st.markdown(f"""
@@ -52,57 +51,9 @@ st.markdown(f"""
             background: linear-gradient(to bottom, rgba(15,23,42,0.45), rgba(15,23,42,0.65));
             z-index: -1;
         }}
-        h1, h2, h3, p {{
+        h1, h2, h3, p, div {{
             text-shadow: 0 3px 12px rgba(0,0,0,0.9) !important;
-            color: #ffffff !important;
-        }}
-        .header {{
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255,255,255,0.12);
-            padding: 16px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        .logo-title h1 {{
-            margin: 0;
-            font-size: 2.8rem;
-            background: linear-gradient(90deg, {YELLOW}, {ACCENT_VIOLET});
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-        .nav-tabs {{
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin: 24px 0 40px;
-        }}
-        .nav-tab {{
-            background: rgba(255,255,255,0.08);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 50px;
-            padding: 12px 28px;
-            color: white;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        .nav-tab:hover {{
-            background: rgba(253,209,0,0.15);
-            transform: translateY(-2px);
-        }}
-        .nav-tab.active {{
-            background: linear-gradient(45deg, {VIOLET}, {ACCENT_VIOLET});
-            box-shadow: 0 8px 25px rgba(106,27,154,0.4);
+            color: {text_color} !important;
         }}
         .kpi-container {{
             display: grid;
@@ -159,10 +110,21 @@ st.markdown(f"""
             width: 90%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             animation: slideUp 0.5s;
+            position: relative;
         }}
         @keyframes slideUp {{
             from {{ transform: translateY(60px); opacity: 0; }}
             to {{ transform: translateY(0); opacity: 1; }}
+        }}
+        .close-btn {{
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: #94a3b8;
+            cursor: pointer;
         }}
         .login-input {{
             width: 100%;
@@ -191,19 +153,30 @@ st.markdown(f"""
             .kpi-value {{
                 font-size: 2.8rem;
             }}
-            .nav-tabs {{
-                flex-direction: column;
-                align-items: center;
-            }}
-            .header {{
-                flex-direction: column;
-                gap: 15px;
-            }}
         }}
     </style>
 """, unsafe_allow_html=True)
 
-# ─── Barre du haut ──────────────────────────────────────────────────────────────
+# ─── CHARGEMENT DONNÉES ─────────────────────────────────────────────────────────
+@st.cache_data
+def load_data(file_name):
+    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
+    try:
+        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
+    except:
+        return pd.DataFrame()
+
+# ─── FONCTION KPI ───────────────────────────────────────────────────────────────
+def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">{label}</div>
+        <div class="kpi-value" style="color:{color};">{value}</div>
+        <div class="kpi-delta">{delta}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ─── BARRE HAUTE ────────────────────────────────────────────────────────────────
 col_logo, col_title, col_toggle = st.columns([1, 5, 1])
 
 with col_logo:
@@ -236,7 +209,7 @@ with col_title:
 with col_toggle:
     st.toggle("Dark / Light", value=st.session_state.dark_mode, key="toggle_dark")
 
-# ─── Navigation horizontale ─────────────────────────────────────────────────────
+# ─── NAVIGATION ─────────────────────────────────────────────────────────────────
 themes = [
     ("Accueil", "🏠"),
     ("Population", "👥"),
@@ -260,26 +233,9 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 current_theme = selected_tab.split(" ", 1)[1]
 
-# ─── Chargement CSV ─────────────────────────────────────────────────────────────
-@st.cache_data
-def load_data(file_name):
-    url = f"https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/{file_name}"
-    try:
-        return pd.read_csv(url, sep=";", decimal=",", low_memory=False)
-    except:
-        return pd.DataFrame()
+# ─── PAGES ──────────────────────────────────────────────────────────────────────
+st.markdown("<div class='main'>", unsafe_allow_html=True)
 
-# ─── KPI simple ─────────────────────────────────────────────────────────────────
-def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
-    st.markdown(f"""
-    <div class="kpi-card">
-        <div class="kpi-title">{label}</div>
-        <div class="kpi-value" style="color:{color};">{value}</div>
-        <div class="kpi-delta">{delta}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ─── Page Accueil ───────────────────────────────────────────────────────────────
 if current_theme == "Accueil":
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
@@ -293,7 +249,38 @@ if current_theme == "Accueil":
         animated_kpi("Satisfaction", "86.4 %", "2025")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ─── Page Emploi / Chômage ─────────────────────────────────────────────────────
+elif current_theme == "Population":
+    df = load_data("POP_RECENSEMENT.csv")
+    if not df.empty:
+        df = df.rename(columns=lambda x: x.strip())
+        st.subheader("Filtres")
+        col1, col2 = st.columns(2)
+        with col1:
+            annees = sorted(df["Période"].unique())
+            annee = st.selectbox("Année", annees, index=len(annees)-1)
+        with col2:
+            communes = ["Toutes"] + sorted(df["Géographie"].unique().tolist())
+            commune = st.selectbox("Commune", communes)
+
+        df_filtre = df[df["Période"] == annee]
+        if commune != "Toutes":
+            df_filtre = df_filtre[df_filtre["Géographie"] == commune]
+
+        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            animated_kpi("Population totale", int(df_filtre["Valeur"].sum()), f"{annee}")
+        with col2:
+            animated_kpi("Moins de 20 ans", 145000, "jeunes")
+        with col3:
+            animated_kpi("65 ans et plus", 98000, "seniors")
+        with col4:
+            animated_kpi("Croissance", "2.8 %", "annuelle")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        fig = px.bar(df_filtre.head(10), x="Géographie", y="Valeur", title="Population par commune")
+        st.plotly_chart(fig, use_container_width=True)
+
 elif current_theme == "Emploi / Chômage":
     chomage = load_data("POP_CHOMAGE_DARES.csv")
     actif_secteur = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
@@ -319,7 +306,6 @@ elif current_theme == "Emploi / Chômage":
             ages = ["Total"] + sorted(chomage["Tranche d'âge"].unique().tolist())
             age_sel = st.selectbox("Tranche d'âge", ages)
 
-    # Filtrage chômage
     df_chom = chomage.copy()
     df_chom["Année"] = df_chom["Date"].str[:4]
     df_chom = df_chom[df_chom["Année"] == annee_sel]
@@ -332,7 +318,6 @@ elif current_theme == "Emploi / Chômage":
 
     total_demandeurs = int(df_chom["Nombre de demandeurs d'emploi"].sum())
 
-    # Emplois occupés (dernière période totale)
     emplois_total = 0
     if not actif_secteur.empty:
         emplois_total = int(actif_secteur[
@@ -342,7 +327,6 @@ elif current_theme == "Emploi / Chômage":
             (actif_secteur["Sexe"] == "Total")
         ]["Valeur"].iloc[-1])
 
-    # Taux approximatif
     taux_approx = "N/A"
     if emplois_total > 0:
         taux_approx = round((total_demandeurs / (emplois_total + total_demandeurs)) * 100, 1)
@@ -359,11 +343,10 @@ elif current_theme == "Emploi / Chômage":
         animated_kpi("Actifs 15-64 ans", "Données en cours", "")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Graphiques
     if not df_chom.empty:
         fig_evol = px.line(chomage.groupby("Date")["Nombre de demandeurs d'emploi"].sum().reset_index(),
                            x="Date", y="Nombre de demandeurs d'emploi",
-                           title="Évolution demandeurs d'emploi (toutes communes)")
+                           title="Évolution demandeurs d'emploi")
         st.plotly_chart(fig_evol, use_container_width=True)
 
         fig_age = px.pie(df_chom.groupby("Tranche d'âge")["Nombre de demandeurs d'emploi"].sum().reset_index(),
@@ -382,7 +365,7 @@ elif current_theme == "Emploi / Chômage":
                           values="Valeur", names="Diplôme",
                           title="Actifs par niveau de diplôme")
         st.plotly_chart(fig_dipl, use_container_width=True)
-        
+
 elif current_theme == "Économie":
     stocks = load_data("ECO_ETAB_STOCKS.csv")
     flores = load_data("ECO_ETAB_FLORES_5.csv")
@@ -407,13 +390,11 @@ elif current_theme == "Économie":
             tailles = ["Toutes"] + sorted(flores["Taille en tranches d'effectifs"].unique().tolist())
             taille_sel = st.selectbox("Taille d'établissement", tailles)
 
-    # Filtrage des données stocks
     df_stocks = stocks.copy()
     df_stocks = df_stocks[df_stocks["Période"] == periode_sel]
     if activite_sel != "Toutes":
         df_stocks = df_stocks[df_stocks["Activité économique"] == activite_sel]
 
-    # KPI réels
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
 
@@ -437,11 +418,9 @@ elif current_theme == "Économie":
             if taille_sel != "Toutes":
                 df_flores = df_flores[df_flores["Taille en tranches d'effectifs"] == taille_sel]
 
-            # Nombre d'établissements = somme Valeur où Mesures de Flores = "Établissements"
             etab_df = df_flores[df_flores["Mesures de Flores"] == "Établissements"]
             nb_etab = int(etab_df["Valeur"].sum()) if not etab_df.empty else 0
 
-            # Effectifs = somme Valeur où Mesures de Flores = "Effectifs présents la dernière semaine de décembre"
             effectif_df = df_flores[df_flores["Mesures de Flores"] == "Effectifs présents la dernière semaine de décembre"]
             effectif_total = int(effectif_df["Valeur"].sum()) if not effectif_df.empty else 0
 
@@ -454,16 +433,13 @@ elif current_theme == "Économie":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Graphiques Plotly
     if not df_stocks.empty:
-        # Évolution du nombre d'établissements (toutes activités)
         evol_etab = stocks.groupby("Période")["Valeur"].sum().reset_index()
         fig_evol = px.line(evol_etab, x="Période", y="Valeur",
                            title="Évolution du nombre d'établissements",
                            markers=True)
         st.plotly_chart(fig_evol, use_container_width=True)
 
-        # Top 5 activités économiques (dernière période)
         top_activ = df_stocks.groupby("Activité économique")["Valeur"].sum().nlargest(5).reset_index()
         fig_activ = px.bar(top_activ, x="Activité économique", y="Valeur",
                            title="Top 5 activités économiques (établissements)",
@@ -472,7 +448,6 @@ elif current_theme == "Économie":
         st.plotly_chart(fig_activ, use_container_width=True)
 
     if not flores.empty:
-        # Répartition par taille d'établissement (dernière période, établissements seulement)
         taille_etab = flores[(flores["Période"] == periode_sel) & (flores["Mesures de Flores"] == "Établissements")]
         taille_dist = taille_etab.groupby("Taille en tranches d'effectifs")["Valeur"].sum().reset_index()
         fig_taille = px.pie(taille_dist, values="Valeur", names="Taille en tranches d'effectifs",
@@ -480,111 +455,41 @@ elif current_theme == "Économie":
         st.plotly_chart(fig_taille, use_container_width=True)
 
     if not creations.empty:
-        # Évolution des créations d'entreprises
         evol_crea = creations.groupby("Période")["Valeur"].sum().reset_index()
         fig_crea = px.line(evol_crea, x="Période", y="Valeur",
                            title="Évolution des créations d'entreprises",
                            markers=True)
-        st.plotly_chart(fig_crea, use_container_width=True
+        st.plotly_chart(fig_crea, use_container_width=True)
 
-elif current_theme == "Éducation":
-    df_diplomes = load_data("POP_ACTIF_INACTIF_DIPLOME.csv")  # ton fichier principal
-    # Si tu as un autre fichier spécifique diplômes, tu peux le charger aussi
-    # df_diplomes_spec = load_data("POP_DIPLOMES.csv")
+elif current_theme == "Finance":
+    if "finance_open" not in st.session_state:
+        st.session_state.finance_open = False
 
-    if df_diplomes.empty:
-        st.warning("Fichier POP_ACTIF_INACTIF_DIPLOME.csv non chargé ou vide")
-        st.stop()
+    if st.button("Accéder à Finance", type="primary"):
+        st.session_state.finance_open = True
 
-    df_diplomes = df_diplomes.rename(columns=lambda x: x.strip())
+    if st.session_state.finance_open:
+        st.markdown(f"""
+        <div class="modal">
+            <div class="modal-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color:{YELLOW}; margin: 0;">Finance</h2>
+                    <button class="close-btn" onclick="document.getElementById('finance-modal').style.display='none'">✕</button>
+                </div>
+                <input class="login-input" placeholder="Identifiant">
+                <input class="login-input" type="password" placeholder="Mot de passe">
+                <button class="login-btn">Se connecter</button>
+                <p style="text-align:center; margin-top:20px; color:#94a3b8;">
+                    <a href="#" style="color:{YELLOW};">Mot de passe oublié ?</a>
+                </p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # Nettoyage léger des colonnes
-    df_diplomes["Période"] = df_diplomes["Période"].astype(str)
-    df_diplomes["Valeur"] = pd.to_numeric(df_diplomes["Valeur"], errors='coerce').fillna(0)
+        if st.button("Fermer"):
+            st.session_state.finance_open = False
+            st.rerun()
 
-    st.subheader("Filtres interactifs")
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        periodes = sorted(df_diplomes["Période"].unique(), reverse=True)
-        periode_sel = st.selectbox("Année", periodes, index=0)
-
-    with col2:
-        communes = ["Toutes"] + sorted(df_diplomes["Géographie"].unique().tolist())
-        commune_sel = st.selectbox("Commune / Zone", communes)
-
-    with col3:
-        ages = ["Toutes"] + sorted(df_diplomes["Âge"].unique().tolist())
-        age_sel = st.selectbox("Tranche d'âge", ages)
-
-    with col4:
-        diplomes = ["Tous"] + sorted(df_diplomes["Diplôme"].unique().tolist())
-        diplome_sel = st.selectbox("Diplôme", diplomes)
-
-    # Filtrage
-    df_filtre = df_diplomes[df_diplomes["Période"] == periode_sel]
-    if commune_sel != "Toutes":
-        df_filtre = df_filtre[df_filtre["Géographie"] == commune_sel]
-    if age_sel != "Toutes":
-        df_filtre = df_filtre[df_filtre["Âge"] == age_sel]
-    if diplome_sel != "Tous":
-        df_filtre = df_filtre[df_filtre["Diplôme"] == diplome_sel]
-
-    # KPI réels
-    st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        total_actifs = int(df_filtre[df_filtre["Statut d'emploi variable selon l'enquête"] == "Total"]["Valeur"].sum())
-        animated_kpi("Actifs / Inactifs 15-64 ans", f"{total_actifs:,}", f"{periode_sel}")
-
-    with col2:
-        # Étudiants 15-24 ans (exemple typique)
-        etudiants = int(df_filtre[
-            (df_filtre["Âge"].str.contains("15 à 24", na=False)) &
-            (df_filtre["Statut d'emploi variable selon l'enquête"].str.contains("Élève|étudiant", na=False))
-        ]["Valeur"].sum())
-        animated_kpi("Étudiants 15-24 ans", f"{etudiants:,}", f"{periode_sel}")
-
-    with col3:
-        bac_plus = int(df_filtre[df_filtre["Diplôme"].str.contains("Bac\+|supérieur", case=False, na=False)]["Valeur"].sum())
-        animated_kpi("Bac+ et supérieur", f"{bac_plus:,}", "dernière période")
-
-    with col4:
-        cap_bep = int(df_filtre[df_filtre["Diplôme"].str.contains("CAP|BEP", na=False)]["Valeur"].sum())
-        animated_kpi("CAP / BEP", f"{cap_bep:,}", "dernière période")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Graphiques Plotly
-    if not df_filtre.empty:
-        # 1. Répartition par diplôme (camembert)
-        diplome_dist = df_filtre.groupby("Diplôme")["Valeur"].sum().reset_index()
-        fig_diplome = px.pie(diplome_dist, values="Valeur", names="Diplôme",
-                             title="Répartition par niveau de diplôme")
-        fig_diplome.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_diplome, use_container_width=True)
-
-        # 2. Évolution du nombre d'actifs/étudiants par année (ligne)
-        evol_actifs = df_diplomes.groupby("Période")["Valeur"].sum().reset_index()
-        fig_evol = px.line(evol_actifs, x="Période", y="Valeur",
-                           title="Évolution actifs / inactifs / étudiants",
-                           markers=True)
-        st.plotly_chart(fig_evol, use_container_width=True)
-
-        # 3. Top 5 diplômes (barres)
-        top_diplomes = df_filtre.groupby("Diplôme")["Valeur"].sum().nlargest(5).reset_index()
-        fig_top = px.bar(top_diplomes, x="Diplôme", y="Valeur",
-                         title="Top 5 diplômes (nombre de personnes)",
-                         color="Valeur", color_continuous_scale="Viridis")
-        fig_top.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(fig_top, use_container_width=True)
-
-        # 4. Répartition par âge (camembert)
-        age_dist = df_filtre.groupby("Âge")["Valeur"].sum().reset_index()
-        fig_age = px.pie(age_dist, values="Valeur", names="Âge",
-                         title="Répartition par tranche d'âge")
-        st.plotly_chart(fig_age, use_container_width=True)        
 else:
     st.markdown(f"<h2 style='text-align:center;'>{current_theme}</h2>", unsafe_allow_html=True)
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
@@ -602,7 +507,7 @@ else:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Footer
+# ─── FOOTER ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="text-align:center; color:#94a3b8; margin:100px 0 40px; font-size:0.95rem;">
     © Communauté Paris-Saclay | Données février 2026 | Développé avec Streamlit & ❤️
