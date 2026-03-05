@@ -60,29 +60,49 @@ st.markdown(f"""
         z-index: -1;
     }}
 
-    /* Rendre les selectbox lisibles */
-    .stSelectbox > div > div {{
-        background-color: rgba(255,255,255,0.12) !important;
+    /* FIX COMPLET DES SELECTBOX STREAMLIT */
+    .stSelectbox div[data-baseweb="select"] > div {{
+        background-color: rgba(255,255,255,0.10) !important;
         color: {text_color} !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(255,255,255,0.35) !important;
+        backdrop-filter: blur(10px) !important;
     }}
 
-    .stSelectbox div[role="listbox"] {{
+    /* Texte dans la zone sélectionnée */
+    .stSelectbox div[data-baseweb="select"] input {{
+        color: {text_color} !important;
+    }}
+
+    /* Liste déroulante */
+    ul[role="listbox"] {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255,255,255,0.25) !important;
+        padding: 8px !important;
     }}
 
+    /* Options dans la liste */
+    ul[role="listbox"] li {{
+        background: transparent !important;
+        color: {text_color} !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+    }}
+
+    ul[role="listbox"] li:hover {{
+        background-color: rgba(255,255,255,0.15) !important;
+    }}
+
+    /* NAVIGATION + KPI */
     .header {{
         position: sticky;
         top: 0;
         z-index: 999;
         background: rgba(255,255,255,0.05);
         backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(255,255,255,0.12);
         padding: 16px 32px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
     }}
 
     .nav-tabs {{
@@ -92,23 +112,9 @@ st.markdown(f"""
         margin: 24px 0 40px;
     }}
 
-    .nav-tab {{
-        background: rgba(255,255,255,0.08);
-        border-radius: 50px;
-        padding: 12px 28px;
-        color: {text_color} !important;
-    }}
-
     .nav-tab.active {{
         background: linear-gradient(45deg, {VIOLET}, {ACCENT_VIOLET});
         color: white !important;
-    }}
-
-    .kpi-container {{
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 28px;
-        margin: 40px 0;
     }}
 
     .kpi-card {{
@@ -116,17 +122,6 @@ st.markdown(f"""
         backdrop-filter: blur(20px);
         border-radius: 24px;
         padding: 28px;
-    }}
-
-    .kpi-title {{
-        opacity: 0.85;
-        margin-bottom: 12px;
-    }}
-
-    .kpi-value {{
-        font-size: 3.2rem;
-        font-weight: 800;
-        color: {ACCENT_YELLOW};
     }}
 
 </style>
@@ -151,7 +146,7 @@ with col_toggle:
     st.toggle("Dark / Light", value=st.session_state.dark_mode, key="toggle_dark")
 
 
-# ─── Navigation horizontale ─────────────────────────────────────────────────────
+# ─── Navigation ───────────────────────────────────────────────────────────────
 themes = [
     ("Accueil", "🏠"),
     ("Population", "👥"),
@@ -191,7 +186,7 @@ def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
     st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-title">{label}</div>
-        <div class="kpi-value">{value}</div>
+        <div class="kpi-value" style="color:{color};">{value}</div>
         <div class="kpi-delta">{delta}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -211,7 +206,6 @@ if current_theme == "Accueil":
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
-
     with col1:
         animated_kpi("Population", "785 420", "+2.8 %")
     with col2:
@@ -234,11 +228,10 @@ elif current_theme == "Population":
         df = df.rename(columns=lambda x: x.strip())
 
         st.subheader("Filtres")
-
         col1, col2 = st.columns(2)
         with col1:
             annees = sorted(df["Période"].unique())
-            annee = st.selectbox("Année", annees, index=len(annees)-1)
+            annee = st.selectbox("Année", annees, index=len(annees) - 1)
         with col2:
             communes = ["Toutes"] + sorted(df["Géographie"].unique().tolist())
             commune = st.selectbox("Commune", communes)
@@ -270,7 +263,7 @@ elif current_theme == "Population":
         st.plotly_chart(fig, use_container_width=True)
 
 # ───────────────────────────────────────────────────────────────
-# PAGE : EMPLOI / CHOMAGE
+# PAGE : EMPLOI / CHÔMAGE
 # ───────────────────────────────────────────────────────────────
 elif current_theme == "Emploi / Chômage":
 
@@ -286,7 +279,7 @@ elif current_theme == "Emploi / Chômage":
 
         with col1:
             annees = sorted(chomage["Date"].str[:4].unique())
-            annee = st.selectbox("Année", annees, index=len(annees)-1)
+            annee = st.selectbox("Année", annees, index=len(annees) - 1)
 
         with col2:
             communes = ["Toutes"] + sorted(chomage["Commune"].unique().tolist())
@@ -300,7 +293,6 @@ elif current_theme == "Emploi / Chômage":
 
         st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
-
         with c1:
             animated_kpi("Demandeurs d'emploi", int(total), annee)
         with c2:
@@ -309,13 +301,14 @@ elif current_theme == "Emploi / Chômage":
             animated_kpi("Actifs occupés", "412 000", "stable")
         with c4:
             animated_kpi("Professions intermédiaires", "37 776", "2011")
-
         st.markdown("</div>", unsafe_allow_html=True)
 
         # Évolution dans le temps
         evol = chomage.groupby("Date")["Nombre de demandeurs d'emploi"].sum().reset_index()
         fig_line = px.line(
-            evol, x="Date", y="Nombre de demandeurs d'emploi",
+            evol,
+            x="Date",
+            y="Nombre de demandeurs d'emploi",
             title="Évolution du nombre de demandeurs d'emploi"
         )
         st.plotly_chart(fig_line, use_container_width=True)
@@ -323,24 +316,33 @@ elif current_theme == "Emploi / Chômage":
         # Répartition par âge
         age = df_chom.groupby("Tranche d'âge")["Nombre de demandeurs d'emploi"].sum().reset_index()
         fig_pie = px.pie(
-            age, values="Nombre de demandeurs d'emploi", names="Tranche d'âge",
+            age,
+            values="Nombre de demandeurs d'emploi",
+            names="Tranche d'âge",
             title="Répartition par âge"
         )
         st.plotly_chart(fig_pie, use_container_width=True)
 
-    # Secteurs
+    # Top secteurs d'emploi
     if not secteur.empty:
         top = secteur.groupby("Activité économique des emplois")["Valeur"].sum().nlargest(5).reset_index()
         fig_bar = px.bar(
-            top, x="Activité économique des emplois", y="Valeur",
+            top,
+            x="Activité économique des emplois",
+            y="Valeur",
             title="Top 5 secteurs d'emploi"
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # Diplômes
+    # Répartition par diplôme
     if not diplome.empty:
         dist = diplome.groupby("Diplôme")["Valeur"].sum().reset_index()
-        fig_pie2 = px.pie(dist, values="Valeur", names="Diplôme", title="Actifs par diplôme")
+        fig_pie2 = px.pie(
+            dist,
+            values="Valeur",
+            names="Diplôme",
+            title="Actifs par diplôme"
+        )
         st.plotly_chart(fig_pie2, use_container_width=True)
 
 # ───────────────────────────────────────────────────────────────
@@ -354,7 +356,6 @@ elif current_theme == "Économie":
 
         st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
-
         with c1:
             animated_kpi("Créations entreprises", int(df["Valeur"].sum()), "cumulé")
         with c2:
@@ -363,15 +364,19 @@ elif current_theme == "Économie":
             animated_kpi("Invest. innovation", "2.8 Md€", "2025")
         with c4:
             animated_kpi("Chiffre d'affaires", "12.5 Md€", "+4.1 %")
-
         st.markdown("</div>", unsafe_allow_html=True)
 
         grp = df.groupby("Période")["Valeur"].sum().reset_index()
-        fig = px.line(grp, x="Période", y="Valeur", title="Évolution des créations d'entreprises")
+        fig = px.line(
+            grp,
+            x="Période",
+            y="Valeur",
+            title="Évolution des créations d'entreprises"
+        )
         st.plotly_chart(fig, use_container_width=True)
 
 # ───────────────────────────────────────────────────────────────
-# PAGE : SOCIAL / MENAGES
+# PAGE : SOCIAL / MÉNAGES
 # ───────────────────────────────────────────────────────────────
 elif current_theme == "Social / Ménages":
 
@@ -381,7 +386,6 @@ elif current_theme == "Social / Ménages":
 
         st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
-
         with c1:
             animated_kpi("Ménages monoparentaux", "18.7 %", "2021")
         with c2:
@@ -390,10 +394,14 @@ elif current_theme == "Social / Ménages":
             animated_kpi("Revenu médian", "27 650 €", "2021")
         with c4:
             animated_kpi("Taux pauvreté", "10.1 %", "2021")
-
         st.markdown("</div>", unsafe_allow_html=True)
 
-        fig = px.bar(df.head(10), x="Géographie", y="Valeur", title="Ménages par commune")
+        fig = px.bar(
+            df.head(10),
+            x="Géographie",
+            y="Valeur",
+            title="Ménages par commune"
+        )
         st.plotly_chart(fig, use_container_width=True)
 
 # ───────────────────────────────────────────────────────────────
@@ -407,7 +415,6 @@ elif current_theme == "Éducation":
 
         st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
-
         with c1:
             animated_kpi("Bac+3 et plus", 27584, "2022")
         with c2:
@@ -416,7 +423,6 @@ elif current_theme == "Éducation":
             animated_kpi("Aucun diplôme", 14220, "15 ans+")
         with c4:
             animated_kpi("Taux insertion", "92 %", "estimé")
-
         st.markdown("</div>", unsafe_allow_html=True)
 
         fig = px.pie(
@@ -426,7 +432,7 @@ elif current_theme == "Éducation":
             title="Répartition des diplômes"
         )
         st.plotly_chart(fig, use_container_width=True)
-# ───────────────────────────────────────────────────────────────
+    # ───────────────────────────────────────────────────────────────
 # PAGE : SPORTS
 # ───────────────────────────────────────────────────────────────
 elif current_theme == "Sports":
@@ -439,7 +445,7 @@ elif current_theme == "Sports":
     with c1:
         animated_kpi("Clubs sportifs", "312", "2025")
     with c2:
-        animated_kpi("Équipements sportifs", "198", "agglo")
+        animated_kpi("Équipements sportifs", "198", "Agglomération")
     with c3:
         animated_kpi("Pratique régulière", "64 %", "habitants")
     with c4:
@@ -461,13 +467,14 @@ elif current_theme == "Finance":
     if "finance_open" not in st.session_state:
         st.session_state.finance_open = False
 
+    # Bouton d'accès
     if st.button("Accéder à Finance"):
         st.session_state.finance_open = True
 
-    # Affichage du bandeau de connexion (Version 1)
+    # Affichage du bandeau de connexion
     if st.session_state.finance_open:
 
-        st.write("")  # léger espacement
+        st.write("")  # Espacement visuel
 
         col1, col2, col3 = st.columns([2, 2, 1])
 
@@ -487,19 +494,19 @@ elif current_theme == "Finance":
             st.session_state.finance_open = False
             st.rerun()
 
-        # (Tu peux ici ajouter une authentification réelle si tu veux.)
+        # (Tu peux ajouter ici une authentification réelle si nécessaire)
 
 
 # ───────────────────────────────────────────────────────────────
-# PAGE PAR DÉFAUT (sécurité)
+# PAGE PAR DÉFAUT
 # ───────────────────────────────────────────────────────────────
 else:
 
     st.markdown(f"<h2 style='text-align:center;'>{current_theme}</h2>", unsafe_allow_html=True)
 
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
-
     cols = st.columns(4)
+
     for i, col in enumerate(cols):
         with col:
             animated_kpi(f"Indicateur {i+1}", "12 345", "+X %")
@@ -514,7 +521,8 @@ else:
 # ───────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="text-align:center; color:#94a3b8; margin:100px 0 40px; font-size:0.95rem;">
-    © Communauté Paris-Saclay | Données février 2026 | Développé par la communauté d'agglomération Paris-Saclay
+    © Communauté Paris-Saclay | Données février 2026 |
+    Développé par la communauté d'agglomération Paris-Saclay
 </div>
 """, unsafe_allow_html=True)
 
