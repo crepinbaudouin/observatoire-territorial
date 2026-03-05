@@ -485,7 +485,106 @@ elif current_theme == "Économie":
         fig_crea = px.line(evol_crea, x="Période", y="Valeur",
                            title="Évolution des créations d'entreprises",
                            markers=True)
-        st.plotly_chart(fig_crea, use_container_width=True)
+        st.plotly_chart(fig_crea, use_container_width=True
+
+elif current_theme == "Éducation":
+    df_diplomes = load_data("POP_ACTIF_INACTIF_DIPLOME.csv")  # ton fichier principal
+    # Si tu as un autre fichier spécifique diplômes, tu peux le charger aussi
+    # df_diplomes_spec = load_data("POP_DIPLOMES.csv")
+
+    if df_diplomes.empty:
+        st.warning("Fichier POP_ACTIF_INACTIF_DIPLOME.csv non chargé ou vide")
+        st.stop()
+
+    df_diplomes = df_diplomes.rename(columns=lambda x: x.strip())
+
+    # Nettoyage léger des colonnes
+    df_diplomes["Période"] = df_diplomes["Période"].astype(str)
+    df_diplomes["Valeur"] = pd.to_numeric(df_diplomes["Valeur"], errors='coerce').fillna(0)
+
+    st.subheader("Filtres interactifs")
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        periodes = sorted(df_diplomes["Période"].unique(), reverse=True)
+        periode_sel = st.selectbox("Année", periodes, index=0)
+
+    with col2:
+        communes = ["Toutes"] + sorted(df_diplomes["Géographie"].unique().tolist())
+        commune_sel = st.selectbox("Commune / Zone", communes)
+
+    with col3:
+        ages = ["Toutes"] + sorted(df_diplomes["Âge"].unique().tolist())
+        age_sel = st.selectbox("Tranche d'âge", ages)
+
+    with col4:
+        diplomes = ["Tous"] + sorted(df_diplomes["Diplôme"].unique().tolist())
+        diplome_sel = st.selectbox("Diplôme", diplomes)
+
+    # Filtrage
+    df_filtre = df_diplomes[df_diplomes["Période"] == periode_sel]
+    if commune_sel != "Toutes":
+        df_filtre = df_filtre[df_filtre["Géographie"] == commune_sel]
+    if age_sel != "Toutes":
+        df_filtre = df_filtre[df_filtre["Âge"] == age_sel]
+    if diplome_sel != "Tous":
+        df_filtre = df_filtre[df_filtre["Diplôme"] == diplome_sel]
+
+    # KPI réels
+    st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        total_actifs = int(df_filtre[df_filtre["Statut d'emploi variable selon l'enquête"] == "Total"]["Valeur"].sum())
+        animated_kpi("Actifs / Inactifs 15-64 ans", f"{total_actifs:,}", f"{periode_sel}")
+
+    with col2:
+        # Étudiants 15-24 ans (exemple typique)
+        etudiants = int(df_filtre[
+            (df_filtre["Âge"].str.contains("15 à 24", na=False)) &
+            (df_filtre["Statut d'emploi variable selon l'enquête"].str.contains("Élève|étudiant", na=False))
+        ]["Valeur"].sum())
+        animated_kpi("Étudiants 15-24 ans", f"{etudiants:,}", f"{periode_sel}")
+
+    with col3:
+        bac_plus = int(df_filtre[df_filtre["Diplôme"].str.contains("Bac\+|supérieur", case=False, na=False)]["Valeur"].sum())
+        animated_kpi("Bac+ et supérieur", f"{bac_plus:,}", "dernière période")
+
+    with col4:
+        cap_bep = int(df_filtre[df_filtre["Diplôme"].str.contains("CAP|BEP", na=False)]["Valeur"].sum())
+        animated_kpi("CAP / BEP", f"{cap_bep:,}", "dernière période")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Graphiques Plotly
+    if not df_filtre.empty:
+        # 1. Répartition par diplôme (camembert)
+        diplome_dist = df_filtre.groupby("Diplôme")["Valeur"].sum().reset_index()
+        fig_diplome = px.pie(diplome_dist, values="Valeur", names="Diplôme",
+                             title="Répartition par niveau de diplôme")
+        fig_diplome.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig_diplome, use_container_width=True)
+
+        # 2. Évolution du nombre d'actifs/étudiants par année (ligne)
+        evol_actifs = df_diplomes.groupby("Période")["Valeur"].sum().reset_index()
+        fig_evol = px.line(evol_actifs, x="Période", y="Valeur",
+                           title="Évolution actifs / inactifs / étudiants",
+                           markers=True)
+        st.plotly_chart(fig_evol, use_container_width=True)
+
+        # 3. Top 5 diplômes (barres)
+        top_diplomes = df_filtre.groupby("Diplôme")["Valeur"].sum().nlargest(5).reset_index()
+        fig_top = px.bar(top_diplomes, x="Diplôme", y="Valeur",
+                         title="Top 5 diplômes (nombre de personnes)",
+                         color="Valeur", color_continuous_scale="Viridis")
+        fig_top.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig_top, use_container_width=True)
+
+        # 4. Répartition par âge (camembert)
+        age_dist = df_filtre.groupby("Âge")["Valeur"].sum().reset_index()
+        fig_age = px.pie(age_dist, values="Valeur", names="Âge",
+                         title="Répartition par tranche d'âge")
+        st.plotly_chart(fig_age, use_container_width=True)        
 else:
     st.markdown(f"<h2 style='text-align:center;'>{current_theme}</h2>", unsafe_allow_html=True)
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
