@@ -467,7 +467,107 @@ elif current_theme == "Finance":
 
     if st.button("Accéder à Finance", type="primary"):
         st.session_state.finance_open = True
+elif current_theme == "Social / Ménages":
+    menages = load_data("POP_MENAGES.csv")
+    filosofi_age = load_data("POP_FILOSOFI_AGE.csv")
+    filosofi_mono = load_data("POP_FILOSOFI_MENAGE_MONO.csv")
+    tension = load_data("LOGEMENT_TENSION.csv")
+    carac = load_data("LOGEMENT_CARAC.csv")
 
+    st.subheader("Filtres interactifs")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        periodes = sorted(menages["Période"].unique(), reverse=True) if not menages.empty else []
+        periode_sel = st.selectbox("Année", periodes, index=0 if periodes else 0)
+
+    with col2:
+        communes = ["Toutes"] + sorted(menages["Géographie"].unique().tolist()) if not menages.empty else []
+        commune_sel = st.selectbox("Commune / Zone", communes)
+
+    with col3:
+        types = ["Tous"] + sorted(menages["Type de ménage et nombre d'enfants"].unique().tolist()) if not menages.empty else []
+        type_sel = st.selectbox("Type de ménage", types)
+
+    # Filtrage principal sur menages
+    df_men = menages.copy()
+    df_men = df_men[df_men["Période"] == periode_sel]
+    if commune_sel != "Toutes":
+        df_men = df_men[df_men["Géographie"] == commune_sel]
+    if type_sel != "Tous":
+        df_men = df_men[df_men["Type de ménage et nombre d'enfants"] == type_sel]
+
+    # KPI réels
+    st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        total_menages = int(df_men[df_men["Mesure du recensement "] == "Logements"]["Valeur"].sum()) if not df_men.empty else 0
+        animated_kpi("Nombre de ménages", f"{total_menages:,}", f"{periode_sel}")
+
+    with col2:
+        monoparentaux = int(df_men[df_men["Type de ménage et nombre d'enfants"].str.contains("monoparentale", na=False)]["Valeur"].sum()) if not df_men.empty else 0
+        animated_kpi("Ménages monoparentaux", f"{monoparentaux:,}", f"{periode_sel}")
+
+    with col3:
+        if not filosofi_mono.empty:
+            df_mono = filosofi_mono.copy()
+            df_mono = df_mono[df_mono["Période"] == periode_sel]
+            if commune_sel != "Toutes":
+                df_mono = df_mono[df_mono["Géographie"] == commune_sel]
+            taux_mono = df_mono["Valeur"].mean() if not df_mono.empty else 0
+            animated_kpi("Taux pauvreté monoparentaux", f"{taux_mono:.1f} %", f"{periode_sel}")
+        else:
+            animated_kpi("Taux pauvreté monoparentaux", "N/A", "données manquantes")
+
+    with col4:
+        if not filosofi_age.empty:
+            df_pauv = filosofi_age.copy()
+            df_pauv = df_pauv[df_pauv["Période"] == periode_sel]
+            if commune_sel != "Toutes":
+                df_pauv = df_pauv[df_pauv["Géographie"] == commune_sel]
+            taux_pauvrete = df_pauv[df_pauv["Mesures filosofi"] == "Taux de pauvreté (en %) au seuil de 60 % de la médiane du niveau de vie"]["Valeur"].mean()
+            animated_kpi("Taux pauvreté global", f"{taux_pauvrete:.1f} %", f"{periode_sel}")
+        else:
+            animated_kpi("Taux pauvreté global", "10.1 %", "2021")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Graphiques Plotly
+    if not df_men.empty:
+        # 1. Répartition par type de ménage (camembert)
+        type_dist = df_men.groupby("Type de ménage et nombre d'enfants")["Valeur"].sum().reset_index()
+        fig_type = px.pie(type_dist, values="Valeur", names="Type de ménage et nombre d'enfants",
+                          title=f"Répartition des ménages par type en {periode_sel}")
+        fig_type.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig_type, use_container_width=True)
+
+        # 2. Top 5 PCS du référent (barres)
+        pcs_dist = df_men.groupby("Profession et catégorie socioprofessionnelle (PCS)")["Valeur"].sum().nlargest(5).reset_index()
+        fig_pcs = px.bar(pcs_dist, x="Profession et catégorie socioprofessionnelle (PCS)", y="Valeur",
+                         title=f"Top 5 PCS du référent de ménage en {periode_sel}")
+        fig_pcs.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig_pcs, use_container_width=True)
+
+    if not tension.empty:
+        # 3. Tension sur le logement (barres)
+        tension_filtre = tension[tension["Période"] == periode_sel]
+        if commune_sel != "Toutes":
+            tension_filtre = tension_filtre[tension_filtre["Géographie"] == commune_sel]
+        fig_tension = px.bar(tension_filtre, x="Indice de peuplement", y="Valeur",
+                             title=f"Tension sur le logement (suroccupation/sous-occupation) en {periode_sel}",
+                             color="Catégorie de logement")
+        st.plotly_chart(fig_tension, use_container_width=True)
+
+    if not carac.empty:
+        # 4. Répartition par nombre de pièces (camembert)
+        carac_filtre = carac[carac["Période"] == periode_sel]
+        if commune_sel != "Toutes":
+            carac_filtre = carac_filtre[carac_filtre["Géographie"] == commune_sel]
+        pieces_dist = carac_filtre.groupby("Nombre de pièces du logement")["Valeur"].sum().reset_index()
+        fig_pieces = px.pie(pieces_dist, values="Valeur", names="Nombre de pièces du logement",
+                            title=f"Répartition par nombre de pièces en {periode_sel}")
+        st.plotly_chart(fig_pieces, use_container_width=True)
     if st.session_state.finance_open:
         st.markdown(f"""
         <div class="modal">
