@@ -290,8 +290,7 @@ st.markdown("<div class='main'>", unsafe_allow_html=True)
 # ========== ACCUEIL ==========
 if current_theme == "Accueil":
 
-    st.markdown("<h1 style='text-align:center; margin-bottom:40px;'>Bienvenue sur l'Observatoire</h1>",
-                unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center; margin-bottom:40px; color:white;'>Bienvenue sur l'Observatoire</h1>", unsafe_allow_html=True)
 
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
