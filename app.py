@@ -1,17 +1,17 @@
-# app.py - Observatoire Territorial Paris-Saclay - Emploi/Chômage réel + toutes pages
+# app.py - Observatoire Territorial Paris-Saclay - Version complète et corrigée
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ─── Config ─────────────────────────────────────────────────────────────────────
+# ─── Configuration de base ──────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Observatoire Territorial Paris-Saclay",
     page_icon="🛰️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed"  # repliée par défaut sur mobile
 )
 
-# ─── Toggle Dark / Light ────────────────────────────────────────────────────────
+# ─── Mode sombre/clair ──────────────────────────────────────────────────────────
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
@@ -34,7 +34,7 @@ bg_color = BG_DARK if st.session_state.dark_mode else BG_LIGHT
 card_bg = CARD_DARK if st.session_state.dark_mode else CARD_LIGHT
 text_color = "#ffffff" if st.session_state.dark_mode else "#0f172a"
 
-# ─── Fond + style ───────────────────────────────────────────────────────────────
+# ─── Fond d'écran + style global ────────────────────────────────────────────────
 fond_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/page%20accueil.jpg"
 
 st.markdown(f"""
@@ -49,9 +49,12 @@ st.markdown(f"""
             content: "";
             position: absolute;
             inset: 0;
-            background: {bg_color};
-            opacity: 0.82;
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.75));
             z-index: -1;
+        }}
+        h1, h2, h3, p, div, .stMarkdown {{
+            text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+            color: {text_color} !important;
         }}
         .header {{
             position: sticky;
@@ -67,10 +70,11 @@ st.markdown(f"""
         }}
         .logo-title h1 {{
             margin: 0;
-            font-size: 2.4rem;
+            font-size: 2.8rem;
             background: linear-gradient(90deg, {YELLOW}, {ACCENT_VIOLET});
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.9);
         }}
         .nav-tabs {{
             display: flex;
@@ -128,10 +132,15 @@ st.markdown(f"""
             font-weight: 800;
             color: {ACCENT_YELLOW};
             margin: 8px 0;
+            animation: countUp 2s ease-out forwards;
         }}
         .kpi-delta {{
             font-size: 1.1rem;
             color: #10b981;
+        }}
+        @keyframes countUp {{
+            from {{ opacity: 0; transform: translateY(20px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
         }}
         .modal {{
             position: fixed;
@@ -156,10 +165,17 @@ st.markdown(f"""
             width: 90%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             animation: slideUp 0.5s;
+            position: relative;
         }}
-        @keyframes slideUp {{
-            from {{ transform: translateY(60px); opacity: 0; }}
-            to {{ transform: translateY(0); opacity: 1; }}
+        .close-btn {{
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: #94a3b8;
+            cursor: pointer;
         }}
         .login-input {{
             width: 100%;
@@ -266,7 +282,21 @@ def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
 st.markdown("<div class='main'>", unsafe_allow_html=True)
 
 if current_theme == "Accueil":
-    st.markdown("<h1 style='text-align:center; margin-bottom:40px;'>Bienvenue sur l'Observatoire</h1>")
+    st.markdown(f"""
+        <h1 style="
+            text-align: center;
+            margin: 60px 0 40px;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, {YELLOW}, {ACCENT_VIOLET}, {YELLOW});
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.9);
+        ">
+            Bienvenue sur l'Observatoire Territorial
+        </h1>
+    """, unsafe_allow_html=True)
+
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -313,9 +343,6 @@ elif current_theme == "Population":
 
 elif current_theme == "Emploi / Chômage":
     chomage = load_data("POP_CHOMAGE_DARES.csv")
-    actif_secteur = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
-    actif_diplome = load_data("POP_ACTIF_INACTIF_DIPLOME.csv")
-
     if not chomage.empty:
         chomage = chomage.rename(columns=lambda x: x.strip())
         st.subheader("Filtres")
@@ -345,79 +372,10 @@ elif current_theme == "Emploi / Chômage":
             animated_kpi("Professions intermédiaires", "37 776", "2011")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Graphique évolution chômage
-        evol = chomage.groupby("Date")["Nombre de demandeurs d'emploi"].sum().reset_index()
-        fig_line = px.line(evol, x="Date", y="Nombre de demandeurs d'emploi", title="Évolution demandeurs d'emploi")
+        fig_line = px.line(chomage.groupby("Date")["Nombre de demandeurs d'emploi"].sum().reset_index(),
+                           x="Date", y="Nombre de demandeurs d'emploi",
+                           title="Évolution demandeurs d'emploi")
         st.plotly_chart(fig_line, use_container_width=True)
-
-        # Répartition par âge
-        age_dist = df_chom.groupby("Tranche d'âge")["Nombre de demandeurs d'emploi"].sum().reset_index()
-        fig_pie = px.pie(age_dist, values="Nombre de demandeurs d'emploi", names="Tranche d'âge", title="Répartition par âge")
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-    if not actif_secteur.empty:
-        top_secteurs = actif_secteur.groupby("Activité économique des emplois")["Valeur"].sum().nlargest(5).reset_index()
-        fig_bar = px.bar(top_secteurs, x="Activité économique des emplois", y="Valeur", title="Top 5 secteurs d'emploi")
-        st.plotly_chart(fig_bar, use_container_width=True)
-
-    if not actif_diplome.empty:
-        diplome_dist = actif_diplome.groupby("Diplôme")["Valeur"].sum().reset_index()
-        fig_pie_diplome = px.pie(diplome_dist, values="Valeur", names="Diplôme", title="Actifs par diplôme")
-        st.plotly_chart(fig_pie_diplome, use_container_width=True)
-
-elif current_theme == "Économie":
-    df = load_data("ECO_ENT_CREATION.csv")
-    if not df.empty:
-        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            animated_kpi("Créations entreprises", int(df["Valeur"].sum()), "cumulé")
-        with col2:
-            animated_kpi("Établissements actifs", 27258, "2023")
-        with col3:
-            animated_kpi("Invest. innovation", "2.8 Md€", "2025")
-        with col4:
-            animated_kpi("Chiffre d'affaires", "12.5 Md€", "+4.1 %")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        fig = px.line(df.groupby("Période")["Valeur"].sum().reset_index(), x="Période", y="Valeur", title="Évolution créations entreprises")
-        st.plotly_chart(fig, use_container_width=True)
-
-elif current_theme == "Social / Ménages":
-    df = load_data("POP_MENAGES.csv")
-    if not df.empty:
-        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            animated_kpi("Ménages monoparentaux", "18.7 %", "2021")
-        with col2:
-            animated_kpi("Taille moyenne ménage", "2.4 pers.", "stable")
-        with col3:
-            animated_kpi("Revenu médian", "27 650 €", "2021")
-        with col4:
-            animated_kpi("Taux pauvreté", "10.1 %", "2021")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        fig = px.bar(df.head(10), x="Géographie", y="Valeur", title="Ménages par commune")
-        st.plotly_chart(fig, use_container_width=True)
-
-elif current_theme == "Éducation":
-    df = load_data("POP_DIPLOMES.csv")
-    if not df.empty:
-        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            animated_kpi("Bac+3 et plus", 27584, "2022")
-        with col2:
-            animated_kpi("CAP / BEP", 34872, "2022")
-        with col3:
-            animated_kpi("Aucun diplôme", 14220, "15 ans+")
-        with col4:
-            animated_kpi("Taux insertion", "92 %", "estimé")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        fig = px.pie(df.head(10), values="Valeur", names="Diplôme", title="Répartition diplômes")
-        st.plotly_chart(fig, use_container_width=True)
 
 elif current_theme == "Finance":
     if "finance_open" not in st.session_state:
@@ -428,9 +386,12 @@ elif current_theme == "Finance":
 
     if st.session_state.finance_open:
         st.markdown(f"""
-        <div class="modal">
+        <div class="modal" id="finance-modal">
             <div class="modal-content">
-                <h2 style="color:{YELLOW}; text-align:center;">Finance</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color:{YELLOW}; margin: 0;">Finance</h2>
+                    <button class="close-btn" onclick="document.getElementById('finance-modal').style.display='none'">✕</button>
+                </div>
                 <input class="login-input" placeholder="Identifiant">
                 <input class="login-input" type="password" placeholder="Mot de passe">
                 <button class="login-btn">Se connecter</button>
