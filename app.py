@@ -407,7 +407,7 @@ elif current_theme == "Économie":
             tailles = ["Toutes"] + sorted(flores["Taille en tranches d'effectifs"].unique().tolist())
             taille_sel = st.selectbox("Taille d'établissement", tailles)
 
-    # Filtrage des données
+    # Filtrage des données stocks
     df_stocks = stocks.copy()
     df_stocks = df_stocks[df_stocks["Période"] == periode_sel]
     if activite_sel != "Toutes":
@@ -436,11 +436,15 @@ elif current_theme == "Économie":
             df_flores = df_flores[df_flores["Période"] == periode_sel]
             if taille_sel != "Toutes":
                 df_flores = df_flores[df_flores["Taille en tranches d'effectifs"] == taille_sel]
-            
-            # Filtre sur la mesure "Effectifs"
-            effectifs_df = df_flores[df_flores["Mesures de Flores"] == "Effectifs présents la dernière semaine de décembre"]
-            effectif_total = int(effectifs_df["Valeur"].sum()) if not effectifs_df.empty else 0
-            
+
+            # Nombre d'établissements = somme Valeur où Mesures de Flores = "Établissements"
+            etab_df = df_flores[df_flores["Mesures de Flores"] == "Établissements"]
+            nb_etab = int(etab_df["Valeur"].sum()) if not etab_df.empty else 0
+
+            # Effectifs = somme Valeur où Mesures de Flores = "Effectifs présents la dernière semaine de décembre"
+            effectif_df = df_flores[df_flores["Mesures de Flores"] == "Effectifs présents la dernière semaine de décembre"]
+            effectif_total = int(effectif_df["Valeur"].sum()) if not effectif_df.empty else 0
+
             animated_kpi("Effectifs salariés", f"{effectif_total:,}", f"{periode_sel}")
         else:
             animated_kpi("Effectifs salariés", "N/A", "données manquantes")
@@ -452,14 +456,14 @@ elif current_theme == "Économie":
 
     # Graphiques Plotly
     if not df_stocks.empty:
-        # 1. Évolution du nombre d'établissements (toutes activités)
+        # Évolution du nombre d'établissements (toutes activités)
         evol_etab = stocks.groupby("Période")["Valeur"].sum().reset_index()
         fig_evol = px.line(evol_etab, x="Période", y="Valeur",
                            title="Évolution du nombre d'établissements",
                            markers=True)
         st.plotly_chart(fig_evol, use_container_width=True)
 
-        # 2. Top 5 activités économiques (dernière période)
+        # Top 5 activités économiques (dernière période)
         top_activ = df_stocks.groupby("Activité économique")["Valeur"].sum().nlargest(5).reset_index()
         fig_activ = px.bar(top_activ, x="Activité économique", y="Valeur",
                            title="Top 5 activités économiques (établissements)",
@@ -468,14 +472,15 @@ elif current_theme == "Économie":
         st.plotly_chart(fig_activ, use_container_width=True)
 
     if not flores.empty:
-        # 3. Répartition par taille d'établissement (dernière période)
-        taille_dist = flores[flores["Période"] == periode_sel].groupby("Taille en tranches d'effectifs")["Établissements"].sum().reset_index()
-        fig_taille = px.pie(taille_dist, values="Établissements", names="Taille en tranches d'effectifs",
+        # Répartition par taille d'établissement (dernière période, établissements seulement)
+        taille_etab = flores[(flores["Période"] == periode_sel) & (flores["Mesures de Flores"] == "Établissements")]
+        taille_dist = taille_etab.groupby("Taille en tranches d'effectifs")["Valeur"].sum().reset_index()
+        fig_taille = px.pie(taille_dist, values="Valeur", names="Taille en tranches d'effectifs",
                             title="Répartition des établissements par taille")
         st.plotly_chart(fig_taille, use_container_width=True)
 
     if not creations.empty:
-        # 4. Évolution des créations d'entreprises
+        # Évolution des créations d'entreprises
         evol_crea = creations.groupby("Période")["Valeur"].sum().reset_index()
         fig_crea = px.line(evol_crea, x="Période", y="Valeur",
                            title="Évolution des créations d'entreprises",
