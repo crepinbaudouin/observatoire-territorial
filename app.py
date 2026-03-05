@@ -237,18 +237,73 @@ current_theme = selected_tab.split(" ", 1)[1]
 st.markdown("<div class='main'>", unsafe_allow_html=True)
 
 if current_theme == "Accueil":
+    st.markdown(f"""
+        <div style="
+            text-align: center;
+            padding: 100px 20px 60px;
+            background: linear-gradient(to bottom, rgba(15,23,42,0.45), rgba(15,23,42,0.65));
+            border-radius: 0 0 40px 40px;
+            margin: 0 -40px 40px -40px;
+        ">
+            <h1 style="
+                font-size: 5.2rem;
+                font-weight: 900;
+                margin: 0 0 20px 0;
+                color: #ffffff;
+                text-shadow: 
+                    0 0 25px rgba(0,0,0,0.95),
+                    0 0 50px rgba(0,0,0,0.8),
+                    0 6px 30px rgba(0,0,0,0.7);
+                letter-spacing: 1px;
+            ">
+                Bienvenue sur l'Observatoire Territorial
+            </h1>
+            <p style="
+                font-size: 1.9rem;
+                color: #f1f5f9;
+                margin: 0;
+                text-shadow: 0 3px 15px rgba(0,0,0,0.9);
+            ">
+                Communauté Paris-Saclay – Indicateurs stratégiques en temps réel
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # KPI avec valeurs réelles ou approximatives
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        animated_kpi("Population", "785 420", "+2.8 %")
-    with col2:
-        animated_kpi("Emplois", "142 000", "+19 %")
-    with col3:
-        animated_kpi("Startups", "1 620", "14 licornes")
-    with col4:
-        animated_kpi("Satisfaction", "86.4 %", "2025")
-    st.markdown("</div>", unsafe_allow_html=True)
 
+    with col1:
+        # Population réelle depuis POP_RECENSEMENT.csv
+        pop_df = load_data("POP_RECENSEMENT.csv")
+        if not pop_df.empty:
+            pop_df = pop_df.rename(columns=lambda x: x.strip())
+            total_pop = int(pop_df[(pop_df["Âge"] == "Total") & (pop_df["Sexe"] == "Total")]["Valeur"].sum())
+            animated_kpi("Population totale", f"{total_pop:,}", "+2.8 %")
+        else:
+            animated_kpi("Population totale", "785 420", "+2.8 %")
+
+    with col2:
+        # Emplois occupés depuis POP_ACTIF_OCCUPE_PCS_SECTEUR.csv
+        emploi_df = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
+        if not emploi_df.empty:
+            emploi_total = int(emploi_df[
+                (emploi_df["Sexe"] == "Total") &
+                (emploi_df["Forme d'emploi"] == "Total") &
+                (emploi_df["Activité économique des emplois"] == "Total") &
+                (emploi_df["Profession et catégorie socioprofessionnelle (PCS)"] == "Total")
+            ]["Valeur"].sum())
+            animated_kpi("Emplois occupés", f"{emploi_total:,}", "+19 %")
+        else:
+            animated_kpi("Emplois", "142 000", "+19 %")
+
+    with col3:
+        animated_kpi("Startups actives", "1 620", "14 licornes")
+
+    with col4:
+        animated_kpi("Satisfaction résidents", "86.4 %", "2025")
+
+    st.markdown("</div>", unsafe_allow_html=True)
 elif current_theme == "Population":
     df = load_data("POP_RECENSEMENT.csv")
     if not df.empty:
