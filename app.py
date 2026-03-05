@@ -460,6 +460,6 @@ st.markdown("</div>", unsafe_allow_html=True)
 # Footer
 st.markdown("""
 <div style="text-align:center; color:#94a3b8; margin:100px 0 40px; font-size:0.95rem;">
-    © Communauté Paris-Saclay | Données février 2026 | Développé avec Streamlit & ❤️
+    © Communauté Paris-Saclay | Données février 2026 | Développé par la communauté d'agglomération Paris-Saclay
 </div>
 """, unsafe_allow_html=True)
