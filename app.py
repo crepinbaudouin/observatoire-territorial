@@ -361,39 +361,97 @@ elif current_theme == "Population":
 
 elif current_theme == "Emploi / Chômage":
     chomage = load_data("POP_CHOMAGE_DARES.csv")
-    if not chomage.empty:
-        chomage = chomage.rename(columns=lambda x: x.strip())
-        st.subheader("Filtres")
-        col1, col2 = st.columns(2)
-        with col1:
-            annees = sorted(chomage["Date"].str[:4].unique())
-            annee = st.selectbox("Année", annees, index=len(annees)-1)
-        with col2:
+    actif_secteur = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
+    actif_diplome = load_data("POP_ACTIF_INACTIF_DIPLOME.csv")
+
+    st.subheader("Filtres interactifs")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if not chomage.empty:
+            chomage["Année"] = chomage["Date"].str[:4]
+            annees = sorted(chomage["Année"].unique(), reverse=True)
+            annee_sel = st.selectbox("Année", annees, index=0)
+
+    with col2:
+        if not chomage.empty:
             communes = ["Toutes"] + sorted(chomage["Commune"].unique().tolist())
-            commune = st.selectbox("Commune", communes)
+            commune_sel = st.selectbox("Commune", communes)
 
-        df_chom = chomage[chomage["Date"].str.contains(annee)]
-        if commune != "Toutes":
-            df_chom = df_chom[df_chom["Commune"] == commune]
+    with col3:
+        if not chomage.empty:
+            sexes = ["Total", "Hommes", "Femmes"]
+            sexe_sel = st.selectbox("Sexe", sexes)
 
-        total_demandeurs = df_chom["Nombre de demandeurs d'emploi"].sum()
+    with col4:
+        if not chomage.empty:
+            ages = ["Total"] + sorted(chomage["Tranche d'âge"].unique().tolist())
+            age_sel = st.selectbox("Tranche d'âge", ages)
 
-        st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            animated_kpi("Demandeurs d'emploi", int(total_demandeurs), f"{annee}")
-        with col2:
-            animated_kpi("Taux chômage estimé", "8.2 %", "2025")
-        with col3:
-            animated_kpi("Actifs occupés", "412 000", "stable")
-        with col4:
-            animated_kpi("Professions intermédiaires", "37 776", "2011")
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Filtrage des données chômage
+    df_chom = chomage.copy()
+    if "Année" in df_chom.columns:
+        df_chom = df_chom[df_chom["Année"] == annee_sel]
+    if commune_sel != "Toutes":
+        df_chom = df_chom[df_chom["Commune"] == commune_sel]
+    if sexe_sel != "Total":
+        df_chom = df_chom[df_chom["Sexe"] == sexe_sel]
+    if age_sel != "Total":
+        df_chom = df_chom[df_chom["Tranche d'âge"] == age_sel]
 
-        fig_line = px.line(chomage.groupby("Date")["Nombre de demandeurs d'emploi"].sum().reset_index(),
-                           x="Date", y="Nombre de demandeurs d'emploi",
-                           title="Évolution demandeurs d'emploi")
-        st.plotly_chart(fig_line, use_container_width=True)
+    total_demandeurs = int(df_chom["Nombre de demandeurs d'emploi"].sum())
+
+    # KPI réels
+    st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        animated_kpi("Demandeurs d'emploi", total_demandeurs, f"{annee_sel}")
+    with col2:
+        # Taux approximatif (exemple fixe, à remplacer si tu as un vrai taux)
+        animated_kpi("Taux chômage estimé", "8.2 %", "2025")
+    with col3:
+        # Emplois occupés (dernière valeur totale du CSV actif_secteur)
+        if not actif_secteur.empty:
+            actif_total = int(actif_secteur[actif_secteur["Profession et catégorie socioprofessionnelle (PCS)"] == "Total"]["Valeur"].iloc[-1])
+            animated_kpi("Emplois occupés", actif_total, "dernière période")
+        else:
+            animated_kpi("Emplois occupés", "412 000", "stable")
+    with col4:
+        animated_kpi("Professions intermédiaires", "37 776", "2011")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Graphiques
+    if not df_chom.empty:
+        # 1. Évolution du nombre de demandeurs (ligne)
+        evol = chomage.groupby("Date")["Nombre de demandeurs d'emploi"].sum().reset_index()
+        fig_evol = px.line(evol, x="Date", y="Nombre de demandeurs d'emploi",
+                           title="Évolution du nombre de demandeurs d'emploi",
+                           markers=True)
+        fig_evol.update_layout(showlegend=False)
+        st.plotly_chart(fig_evol, use_container_width=True)
+
+        # 2. Répartition par tranche d'âge (camembert)
+        age_dist = df_chom.groupby("Tranche d'âge")["Nombre de demandeurs d'emploi"].sum().reset_index()
+        fig_age = px.pie(age_dist, values="Nombre de demandeurs d'emploi", names="Tranche d'âge",
+                         title="Répartition des demandeurs par âge")
+        st.plotly_chart(fig_age, use_container_width=True)
+
+        # 3. Top secteurs d'emploi (barres)
+        if not actif_secteur.empty:
+            top_secteurs = actif_secteur.groupby("Activité économique des emplois")["Valeur"].sum().nlargest(8).reset_index()
+            fig_sect = px.bar(top_secteurs, x="Activité économique des emplois", y="Valeur",
+                              title="Top secteurs d'emploi occupés",
+                              color="Valeur", color_continuous_scale="Viridis")
+            fig_sect.update_layout(xaxis_tickangle=-45)
+            st.plotly_chart(fig_sect, use_container_width=True)
+
+        # 4. Actifs par diplôme (camembert)
+        if not actif_diplome.empty:
+            diplome_dist = actif_diplome.groupby("Diplôme")["Valeur"].sum().reset_index()
+            fig_dipl = px.pie(diplome_dist, values="Valeur", names="Diplôme",
+                              title="Répartition des actifs par niveau de diplôme")
+            st.plotly_chart(fig_dipl, use_container_width=True)
 
 elif current_theme == "Finance":
     if "finance_open" not in st.session_state:
