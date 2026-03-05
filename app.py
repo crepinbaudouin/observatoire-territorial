@@ -549,7 +549,6 @@ elif current_theme == "Finance":
 </div>
 """, unsafe_allow_html=True)
 
-
 # ========== PAGE PAR DÉFAUT ==========
 else:
 
