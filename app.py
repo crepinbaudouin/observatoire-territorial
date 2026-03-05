@@ -282,21 +282,52 @@ def animated_kpi(label, value, delta="", color=ACCENT_YELLOW):
 st.markdown("<div class='main'>", unsafe_allow_html=True)
 
 if current_theme == "Accueil":
-    st.markdown(f"""
-        <h1 style="
+    st.markdown("""
+        <div style="
+            position: relative;
             text-align: center;
-            margin: 60px 0 40px;
-            font-size: 4rem;
-            font-weight: 900;
-            background: linear-gradient(90deg, {YELLOW}, {ACCENT_VIOLET}, {YELLOW});
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.9);
+            padding: 80px 20px;
+            margin: 40px 0;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.15);
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         ">
-            Bienvenue sur l'Observatoire Territorial
-        </h1>
+            <h1 style="
+                font-size: 4.8rem;
+                font-weight: 900;
+                margin: 0 0 20px 0;
+                background: linear-gradient(90deg, #FDD100, #9F7AEA, #FDD100);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-shadow: 0 4px 20px rgba(0,0,0,0.9), 0 0 30px rgba(253,209,0,0.5);
+                animation: glow 4s ease-in-out infinite alternate;
+            ">
+                Bienvenue sur l'Observatoire Territorial
+            </h1>
+            <p style="
+                font-size: 1.6rem;
+                color: #e2e8f0;
+                margin: 0;
+                text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            ">
+                Communauté Paris-Saclay – Indicateurs stratégiques en temps réel
+            </p>
+        </div>
+
+        <style>
+            @keyframes glow {
+                from { text-shadow: 0 4px 20px rgba(0,0,0,0.9), 0 0 30px rgba(253,209,0,0.5); }
+                to   { text-shadow: 0 4px 30px rgba(0,0,0,0.9), 0 0 50px rgba(253,209,0,0.8); }
+            }
+        </style>
     """, unsafe_allow_html=True)
 
+    # KPI en dessous (comme avant, mais avec plus de contraste)
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
