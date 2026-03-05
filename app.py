@@ -530,25 +530,24 @@ elif current_theme == "Finance":
     if st.session_state.finance_open:
 
         st.markdown(f"""
-        <div class="modal">
-            <div class="modal-content">
-                <h2 style="color:{YELLOW}; text-align:center;">Finance</h2>
+<div class="modal">
+    <div class="modal-content">
 
-                <input class="login-input" placeholder="Identifiant">
-                <input class="login-input" type="password" placeholder="Mot de passe">
+        <h2 style="color:{YELLOW}; text-align:center;">Finance</h2>
 
-                <button class="login-btn">Se connecter</button>
+        <input class="login-input" placeholder="Identifiant" style="color:white;">
 
-                <p style="text-align:center; margin-top:20px; color:#94a3b8;">
-                    #Mot de passe oublié ?</a>
-                </p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        <input class="login-input" type="password" placeholder="Mot de passe" style="color:white;">
 
-        if st.button("Fermer"):
-            st.session_state.finance_open = False
-            st.rerun()
+        <button class="login-btn">Se connecter</button>
+
+        <p style="text-align:center; margin-top:20px; color:white;">
+            #Mot de passe oublié ?</a>
+        </p>
+
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ========== PAGE PAR DÉFAUT ==========
