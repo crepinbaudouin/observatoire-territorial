@@ -237,6 +237,7 @@ current_theme = selected_tab.split(" ", 1)[1]
 st.markdown("<div class='main'>", unsafe_allow_html=True)
 
 if current_theme == "Accueil":
+    # Titre très lisible (blanc + ombre noire forte)
     st.markdown(f"""
         <div style="
             text-align: center;
@@ -269,39 +270,58 @@ if current_theme == "Accueil":
         </div>
     """, unsafe_allow_html=True)
 
-    # KPI avec valeurs réelles ou approximatives
+    # Chargement CSV pour KPI réels
+    pop_df = load_data("POP_RECENSEMENT.csv")
+    emploi_df = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
+    filosofi_df = load_data("POP_FILOSOFI_AGE.csv")  # pour taux pauvreté
+
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
 
+    # Population totale (réelle)
     with col1:
-        # Population réelle depuis POP_RECENSEMENT.csv
-        pop_df = load_data("POP_RECENSEMENT.csv")
         if not pop_df.empty:
             pop_df = pop_df.rename(columns=lambda x: x.strip())
-            total_pop = int(pop_df[(pop_df["Âge"] == "Total") & (pop_df["Sexe"] == "Total")]["Valeur"].sum())
-            animated_kpi("Population totale", f"{total_pop:,}", "+2.8 %")
+            # Somme dernière période, Total âge + Total sexe
+            total_pop = int(pop_df[
+                (pop_df["Âge"] == "Total") &
+                (pop_df["Sexe"] == "Total")
+            ]["Valeur"].sum())
+            animated_kpi("Population totale", f"{total_pop:,}", "+2.8 % (estimé)")
         else:
             animated_kpi("Population totale", "785 420", "+2.8 %")
 
+    # Emplois occupés (réelle)
     with col2:
-        # Emplois occupés depuis POP_ACTIF_OCCUPE_PCS_SECTEUR.csv
-        emploi_df = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
         if not emploi_df.empty:
-            emploi_total = int(emploi_df[
+            emploi_df = emploi_df.rename(columns=lambda x: x.strip())
+            # Somme dernière période, Total partout
+            emplois_total = int(emploi_df[
                 (emploi_df["Sexe"] == "Total") &
                 (emploi_df["Forme d'emploi"] == "Total") &
                 (emploi_df["Activité économique des emplois"] == "Total") &
                 (emploi_df["Profession et catégorie socioprofessionnelle (PCS)"] == "Total")
             ]["Valeur"].sum())
-            animated_kpi("Emplois occupés", f"{emploi_total:,}", "+19 %")
+            animated_kpi("Emplois occupés", f"{emplois_total:,}", "+19 % (estimé)")
         else:
-            animated_kpi("Emplois", "142 000", "+19 %")
+            animated_kpi("Emplois occupés", "142 000", "+19 %")
 
+    # Startups (pas de CSV → estimation)
     with col3:
-        animated_kpi("Startups actives", "1 620", "14 licornes")
+        animated_kpi("Startups actives", "1 620", "14 licornes (estimé)")
 
+    # Taux de pauvreté (réel depuis filosofi)
     with col4:
-        animated_kpi("Satisfaction résidents", "86.4 %", "2025")
+        if not filosofi_df.empty:
+            filosofi_df = filosofi_df.rename(columns=lambda x: x.strip())
+            # Dernière période, taux pauvreté global
+            taux_pauvrete = filosofi_df[
+                filosofi_df["Mesures filosofi"].str.contains("Taux de pauvreté", na=False)
+            ]["Valeur"].mean()
+            taux_pauvrete_str = f"{taux_pauvrete:.1f} %" if not pd.isna(taux_pauvrete) else "N/A"
+            animated_kpi("Taux de pauvreté", taux_pauvrete_str, "2021")
+        else:
+            animated_kpi("Taux de pauvreté", "10.1 %", "2021")
 
     st.markdown("</div>", unsafe_allow_html=True)
 elif current_theme == "Population":
