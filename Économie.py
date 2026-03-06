@@ -5,6 +5,36 @@ import plotly.express as px
 from utils import load_data, animated_kpi
 
 def show_economie():
+    # Fond d'écran spécifique à la page Économie
+    bg_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/economie.jpg"
+
+    st.markdown(f"""
+        <style>
+            [data-testid="stAppViewContainer"] {{
+                background-image: url("{bg_url}") !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-repeat: no-repeat !important;
+                background-attachment: fixed !important;
+            }}
+            [data-testid="stAppViewContainer"] > div:first-child::before {{
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(to bottom, rgba(15,23,42,0.55), rgba(15,23,42,0.75));
+                z-index: -1;
+                pointer-events: none;
+            }}
+            h1, h2, h3, p, label, .stSelectbox label, .stMarkdown {{
+                color: #ffffff !important;
+                text-shadow: 0 2px 8px rgba(0,0,0,0.9) !important;
+            }}
+            .block-container, .st-emotion-cache-1r6slb0 {{
+                background: transparent !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
+
     st.title("Économie")
 
     stocks = load_data("ECO_ETAB_STOCKS.csv")
@@ -30,11 +60,13 @@ def show_economie():
             tailles = ["Toutes"] + sorted(flores["Taille en tranches d'effectifs"].unique().tolist())
             taille_sel = st.selectbox("Taille d'établissement", tailles)
 
+    # Filtrage des données stocks
     df_stocks = stocks.copy()
     df_stocks = df_stocks[df_stocks["Période"] == periode_sel]
     if activite_sel != "Toutes":
         df_stocks = df_stocks[df_stocks["Activité économique"] == activite_sel]
 
+    # KPI réels
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
 
@@ -73,6 +105,7 @@ def show_economie():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # Graphiques Plotly
     if not df_stocks.empty:
         evol_etab = stocks.groupby("Période")["Valeur"].sum().reset_index()
         fig_evol = px.line(evol_etab, x="Période", y="Valeur",
