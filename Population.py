@@ -1,34 +1,44 @@
 def show_population():
-    st.title("Population")
-
-    # Fond d'écran spécifique à cette page
     population_bg_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/population.jpg"
 
+    # Injection CSS très agressive pour forcer le fond sur la page entière
     st.markdown(f"""
         <style>
-            section[data-testid="stAppViewContainer"] {{
-                background-image: url("{population_bg_url}");
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                background-attachment: fixed;
+            /* Cible le conteneur principal de la page */
+            [data-testid="stAppViewContainer"] {{
+                background-image: url("{population_bg_url}") !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-repeat: no-repeat !important;
+                background-attachment: fixed !important;
             }}
-            section[data-testid="stAppViewContainer"]::before {{
+
+            /* Voile sombre semi-transparent pour lisibilité */
+            [data-testid="stAppViewContainer"] > div:first-child::before {{
                 content: "";
                 position: absolute;
                 inset: 0;
                 background: linear-gradient(to bottom, rgba(15,23,42,0.55), rgba(15,23,42,0.75));
                 z-index: -1;
+                pointer-events: none;
             }}
-            .stApp > div:first-child {{
-                background: transparent !important;
-            }}
-            h1, h2, h3, p, .stMarkdown {{
+
+            /* Force les textes en blanc + ombre pour contraste */
+            h1, h2, h3, p, div, label, .stSelectbox, .stMarkdown {{
                 color: #ffffff !important;
                 text-shadow: 0 2px 8px rgba(0,0,0,0.9) !important;
+                background: transparent !important;
+            }}
+
+            /* Évite que les éléments Streamlit aient un fond blanc/opaque */
+            .st-emotion-cache-1r6slb0, .block-container {{
+                background: transparent !important;
             }}
         </style>
     """, unsafe_allow_html=True)
+
+    # Le reste de ta page (titre, filtres, KPI, graphiques)
+    st.title("Population")
 
     df = load_data("POP_RECENSEMENT.csv")
     if df.empty:
