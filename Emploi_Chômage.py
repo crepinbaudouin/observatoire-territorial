@@ -5,6 +5,36 @@ import plotly.express as px
 from utils import load_data, animated_kpi
 
 def show_emploi_chomage():
+    # Fond d'écran spécifique à la page Emploi/Chômage
+    bg_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/emploi.jpeg"
+
+    st.markdown(f"""
+        <style>
+            [data-testid="stAppViewContainer"] {{
+                background-image: url("{bg_url}") !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-repeat: no-repeat !important;
+                background-attachment: fixed !important;
+            }}
+            [data-testid="stAppViewContainer"] > div:first-child::before {{
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(to bottom, rgba(15,23,42,0.55), rgba(15,23,42,0.75));
+                z-index: -1;
+                pointer-events: none;
+            }}
+            h1, h2, h3, p, label, .stSelectbox label, .stMarkdown {{
+                color: #ffffff !important;
+                text-shadow: 0 2px 8px rgba(0,0,0,0.9) !important;
+            }}
+            .block-container, .st-emotion-cache-1r6slb0 {{
+                background: transparent !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
+
     st.title("Emploi / Chômage")
 
     chomage = load_data("POP_CHOMAGE_DARES.csv")
@@ -13,24 +43,29 @@ def show_emploi_chomage():
 
     st.subheader("Filtres")
     col1, col2, col3, col4 = st.columns(4)
+
     with col1:
         if not chomage.empty:
             chomage["Année"] = chomage["Date"].str[:4]
             annees = sorted(chomage["Année"].unique(), reverse=True)
             annee_sel = st.selectbox("Année", annees, index=0)
+
     with col2:
         if not chomage.empty:
             communes = ["Toutes"] + sorted(chomage["Commune"].unique().tolist())
             commune_sel = st.selectbox("Commune", communes)
+
     with col3:
         if not chomage.empty:
             sexes = ["Total", "Hommes", "Femmes"]
             sexe_sel = st.selectbox("Sexe", sexes)
+
     with col4:
         if not chomage.empty:
             ages = ["Total"] + sorted(chomage["Tranche d'âge"].unique().tolist())
             age_sel = st.selectbox("Tranche d'âge", ages)
 
+    # Filtrage
     df_chom = chomage.copy()
     df_chom["Année"] = df_chom["Date"].str[:4]
     df_chom = df_chom[df_chom["Année"] == annee_sel]
