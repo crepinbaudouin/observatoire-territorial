@@ -237,7 +237,7 @@ current_theme = selected_tab.split(" ", 1)[1]
 st.markdown("<div class='main'>", unsafe_allow_html=True)
 
 if current_theme == "Accueil":
-    # Titre très lisible (blanc + ombre noire forte)
+    # Titre très lisible (blanc pur + ombre noire forte)
     st.markdown(f"""
         <div style="
             text-align: center;
@@ -270,60 +270,84 @@ if current_theme == "Accueil":
         </div>
     """, unsafe_allow_html=True)
 
-    # Chargement CSV pour KPI réels
+    # Chargement CSV pour calculs dynamiques
     pop_df = load_data("POP_RECENSEMENT.csv")
     emploi_df = load_data("POP_ACTIF_OCCUPE_PCS_SECTEUR.csv")
-    filosofi_df = load_data("POP_FILOSOFI_AGE.csv")  # pour taux pauvreté
+    chomage_df = load_data("POP_CHOMAGE_DARES.csv")
+    filosofi_df = load_data("POP_FILOSOFI_AGE.csv")  # ou POP_FILOSOFI_MENAGE_MONO.csv
 
     st.markdown("<div class='kpi-container'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
 
-    # Population totale (réelle)
+    # 1. Population totale + croissance dynamique
     with col1:
         if not pop_df.empty:
             pop_df = pop_df.rename(columns=lambda x: x.strip())
-            # Somme dernière période, Total âge + Total sexe
-            total_pop = int(pop_df[
-                (pop_df["Âge"] == "Total") &
-                (pop_df["Sexe"] == "Total")
-            ]["Valeur"].sum())
-            animated_kpi("Population totale", f"{total_pop:,}", "+2.8 % (estimé)")
+            pop_df = pop_df[(pop_df["Âge"] == "Total") & (pop_df["Sexe"] == "Total")]
+            pop_df = pop_df.sort_values("Période")
+            if len(pop_df) >= 2:
+                derniere = pop_df.iloc[-1]["Valeur"]
+                precedente = pop_df.iloc[-2]["Valeur"]
+                croissance_pop = round(((derniere - precedente) / precedente) * 100, 1)
+                croissance_str = f"+{croissance_pop} %" if croissance_pop > 0 else f"{croissance_pop} %"
+            else:
+                croissance_str = "N/A"
+            total_pop = int(pop_df["Valeur"].iloc[-1])
+            animated_kpi("Population totale", f"{total_pop:,}", croissance_str)
         else:
-            animated_kpi("Population totale", "785 420", "+2.8 %")
+            animated_kpi("Population totale", "N/A", "données manquantes")
 
-    # Emplois occupés (réelle)
+    # 2. Emplois occupés + croissance dynamique
     with col2:
         if not emploi_df.empty:
             emploi_df = emploi_df.rename(columns=lambda x: x.strip())
-            # Somme dernière période, Total partout
-            emplois_total = int(emploi_df[
+            emploi_df = emploi_df[
                 (emploi_df["Sexe"] == "Total") &
                 (emploi_df["Forme d'emploi"] == "Total") &
                 (emploi_df["Activité économique des emplois"] == "Total") &
                 (emploi_df["Profession et catégorie socioprofessionnelle (PCS)"] == "Total")
-            ]["Valeur"].sum())
-            animated_kpi("Emplois occupés", f"{emplois_total:,}", "+19 % (estimé)")
+            ]
+            emploi_df = emploi_df.sort_values("Période")
+            if len(emploi_df) >= 2:
+                derniere = emploi_df.iloc[-1]["Valeur"]
+                precedente = emploi_df.iloc[-2]["Valeur"]
+                croissance_emploi = round(((derniere - precedente) / precedente) * 100, 1)
+                croissance_str = f"+{croissance_emploi} %" if croissance_emploi > 0 else f"{croissance_emploi} %"
+            else:
+                croissance_str = "N/A"
+            emplois_total = int(emploi_df["Valeur"].iloc[-1])
+            animated_kpi("Emplois occupés", f"{emplois_total:,}", croissance_str)
         else:
-            animated_kpi("Emplois occupés", "142 000", "+19 %")
+            animated_kpi("Emplois occupés", "N/A", "données manquantes")
 
-    # Startups (pas de CSV → estimation)
+    # 3. Taux de chômage approximatif (remplace startups)
     with col3:
-        animated_kpi("Startups actives", "1 620", "14 licornes (estimé)")
+        if not chomage_df.empty and not emploi_df.empty:
+            last_date = chomage_df["Date"].max()
+            demandeurs = int(chomage_df[chomage_df["Date"] == last_date]["Nombre de demandeurs d'emploi"].sum())
+            emplois = emplois_total  # déjà calculé ci-dessus
+            if emplois > 0:
+                taux_chomage = round((demandeurs / (emplois + demandeurs)) * 100, 1)
+                animated_kpi("Taux de chômage approx.", f"{taux_chomage} %", f"{last_date}")
+            else:
+                animated_kpi("Taux de chômage approx.", "N/A", "données manquantes")
+        else:
+            animated_kpi("Taux de chômage approx.", "N/A", "données manquantes")
 
-    # Taux de pauvreté (réel depuis filosofi)
+    # 4. Taux de pauvreté (remplace satisfaction)
     with col4:
         if not filosofi_df.empty:
             filosofi_df = filosofi_df.rename(columns=lambda x: x.strip())
-            # Dernière période, taux pauvreté global
             taux_pauvrete = filosofi_df[
                 filosofi_df["Mesures filosofi"].str.contains("Taux de pauvreté", na=False)
             ]["Valeur"].mean()
-            taux_pauvrete_str = f"{taux_pauvrete:.1f} %" if not pd.isna(taux_pauvrete) else "N/A"
-            animated_kpi("Taux de pauvreté", taux_pauvrete_str, "2021")
+            taux_str = f"{taux_pauvrete:.1f} %" if not pd.isna(taux_pauvrete) else "N/A"
+            animated_kpi("Taux de pauvreté", taux_str, "dernière période")
         else:
-            animated_kpi("Taux de pauvreté", "10.1 %", "2021")
+            animated_kpi("Taux de pauvreté", "N/A", "données manquantes")
 
     st.markdown("</div>", unsafe_allow_html=True)
+    
 elif current_theme == "Population":
     df = load_data("POP_RECENSEMENT.csv")
     if not df.empty:
