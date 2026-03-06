@@ -1,19 +1,22 @@
-def show_population():
-    population_bg_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/population.jpg"
+# Population.py
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from utils import load_data, animated_kpi
 
-    # Injection CSS très agressive pour forcer le fond sur la page entière
+def show_population():
+    # Fond spécifique à la page Population
+    bg_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/population.jpg"
+
     st.markdown(f"""
         <style>
-            /* Cible le conteneur principal de la page */
             [data-testid="stAppViewContainer"] {{
-                background-image: url("{population_bg_url}") !important;
+                background-image: url("{bg_url}") !important;
                 background-size: cover !important;
                 background-position: center !important;
                 background-repeat: no-repeat !important;
                 background-attachment: fixed !important;
             }}
-
-            /* Voile sombre semi-transparent pour lisibilité */
             [data-testid="stAppViewContainer"] > div:first-child::before {{
                 content: "";
                 position: absolute;
@@ -22,22 +25,16 @@ def show_population():
                 z-index: -1;
                 pointer-events: none;
             }}
-
-            /* Force les textes en blanc + ombre pour contraste */
-            h1, h2, h3, p, div, label, .stSelectbox, .stMarkdown {{
+            h1, h2, h3, p, .stSelectbox label, .stMarkdown {{
                 color: #ffffff !important;
                 text-shadow: 0 2px 8px rgba(0,0,0,0.9) !important;
-                background: transparent !important;
             }}
-
-            /* Évite que les éléments Streamlit aient un fond blanc/opaque */
-            .st-emotion-cache-1r6slb0, .block-container {{
+            .block-container {{
                 background: transparent !important;
             }}
         </style>
     """, unsafe_allow_html=True)
 
-    # Le reste de ta page (titre, filtres, KPI, graphiques)
     st.title("Population")
 
     df = load_data("POP_RECENSEMENT.csv")
@@ -51,7 +48,7 @@ def show_population():
     col1, col2 = st.columns(2)
     with col1:
         annees = sorted(df["Période"].unique())
-        annee = st.selectbox("Année", annees, index=len(annees)-1)
+        annee = st.selectbox("Année", annees, index=len(annees)-1 if annees else 0)
     with col2:
         communes = ["Toutes"] + sorted(df["Géographie"].unique().tolist())
         commune = st.selectbox("Commune", communes)
