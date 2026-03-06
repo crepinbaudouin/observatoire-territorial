@@ -1,11 +1,34 @@
-# 02_Population.py
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-from utils import load_data, animated_kpi
-
 def show_population():
     st.title("Population")
+
+    # Fond d'écran spécifique à cette page
+    population_bg_url = "https://raw.githubusercontent.com/crepinbaudouin/observatoire-territorial/main/population.jpg"
+
+    st.markdown(f"""
+        <style>
+            section[data-testid="stAppViewContainer"] {{
+                background-image: url("{population_bg_url}");
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+            }}
+            section[data-testid="stAppViewContainer"]::before {{
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(to bottom, rgba(15,23,42,0.55), rgba(15,23,42,0.75));
+                z-index: -1;
+            }}
+            .stApp > div:first-child {{
+                background: transparent !important;
+            }}
+            h1, h2, h3, p, .stMarkdown {{
+                color: #ffffff !important;
+                text-shadow: 0 2px 8px rgba(0,0,0,0.9) !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
 
     df = load_data("POP_RECENSEMENT.csv")
     if df.empty:
